@@ -1,10 +1,10 @@
 # T01 제출문 — 최종 제출용
 
 ## 1. 결과물 주소
-- [공개 배포 후 입력: 로그인 없이 열리는 결과물 URL]
+- [공개 배포 후 입력: https://taetaeeee.github.io/SKT_ALEPT_Tasks/]
 
 ## 2. 소스 주소
-- [공개 배포 후 입력: 로그인 없이 열리는 공개 소스 URL]
+- [공개 배포 후 입력: https://github.com/Taetaeeee/SKT_ALEPT_Tasks]
 
 ## 3. 짧은 확인 방법 4줄
 - 위치: 공개 결과물 주소의 첫 화면에서 시작합니다.
