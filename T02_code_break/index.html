@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CODE BREAK - 8BIT Security Terminal</title>
+  <meta name="description" content="25초 안에 점점 길어지는 보안 암호를 해제하는 8비트 터미널 타이핑 미니게임" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <section id="terminal" class="terminal trace-0" aria-labelledby="game-title">
+      <header class="terminal-header">
+        <div>
+          <p class="eyebrow">SECURE TERMINAL // LOCAL NODE</p>
+          <h1 id="game-title">CODE BREAK</h1>
+        </div>
+        <div class="status-lamps" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </header>
+
+      <div class="terminal-body">
+        <section id="start-screen" class="screen active" aria-labelledby="start-title">
+          <div class="scanline-box">
+            <p class="system-line">&gt; CONNECTION ESTABLISHED</p>
+            <h2 id="start-title">당신은 해커입니다. 보안 시스템을 해제하세요.</h2>
+
+            <div class="rules start-rules">
+              <h3>MISSION</h3>
+              <p><strong>25초 동안</strong> 가능한 한 긴 보안 암호를 해제하세요.</p>
+              <p><strong id="mission-start-length">3</strong>자리부터 시작하며, 정답마다 다음 암호가 <strong>1자리씩 증가</strong>합니다.</p>
+              <p>목표는 <strong id="mission-target-length">8</strong>자리지만, 목표를 달성해도 종료되지 않고 <strong>25초가 끝날 때까지 계속 진행</strong>합니다.</p>
+              <p>오답은 <strong>TRACE만 상승</strong>하며 시간이 차감되지 않고, 같은 암호에 다시 도전합니다.</p>
+            </div>
+
+            <div class="settings-panel" aria-label="효과 설정">
+              <label>
+                <input id="mute-toggle" type="checkbox" />
+                효과음 끄기
+              </label>
+              <label>
+                <input id="motion-toggle" type="checkbox" />
+                화면 효과 줄이기
+              </label>
+            </div>
+
+            <div class="start-action">
+              <button id="start-button" class="pixel-button primary" type="button">[ GAME START ]</button>
+            </div>
+            <p class="best-record">BEST MAX CODE : <span id="best-max-start">--</span></p>
+            <div class="save-actions">
+              <button id="reset-save-button" class="text-button" type="button">[ RESET SAVE ]</button>
+              <span id="save-message" class="save-message" aria-live="polite"></span>
+            </div>
+
+            <div id="easy-mode-status" class="easy-mode-status" hidden aria-live="polite">
+              <p>&gt; EASY MODE ACTIVATED</p>
+              <p>START: 3 DIGITS // TARGET: <strong id="easy-target-display">7</strong> DIGITS</p>
+              <p>BEST MAX RECORDING: OFF</p>
+            </div>
+
+            <button
+              id="easy-mode-egg"
+              class="easy-mode-egg"
+              type="button"
+              aria-label="숨겨진 쉬운 모드"
+              aria-pressed="false"
+              title="?"
+            >[ ? ]</button>
+          </div>
+        </section>
+
+        <section id="game-screen" class="screen" aria-labelledby="game-heading">
+          <div class="control-hint" aria-label="게임 조작 방법">
+            <span class="control-title">CONTROL</span>
+            <span><kbd>키보드</kbd> 암호 입력</span>
+            <span><kbd>ENTER</kbd> 제출</span>
+            <span><kbd>ESC</kbd> 일시정지 / 재개</span>
+            <span class="mode-indicator">MODE <strong id="play-mode-display">NORMAL</strong></span>
+          </div>
+
+          <div class="hud">
+            <div>
+              <span class="hud-label">STATUS</span>
+              <strong id="game-state-text">RUNNING</strong>
+            </div>
+            <div>
+              <span class="hud-label">TIME</span>
+              <strong id="time-left">25.00</strong>
+            </div>
+            <div>
+              <span class="hud-label">ERRORS</span>
+              <strong id="error-count">0</strong>
+            </div>
+            <div>
+              <span class="hud-label">TRACE</span>
+              <strong id="trace-level">0%</strong>
+            </div>
+          </div>
+
+          <p id="lockdown-warning" class="lockdown-warning" aria-live="polite"></p>
+
+          <div class="game-core">
+            <aside class="trace-column" aria-label="역추적 상태">
+              <div
+                id="trace-face"
+                class="trace-face face-safe"
+                role="img"
+                aria-label="역추적 상태 안전"
+              >
+            <div class="face-eyes" aria-hidden="true">
+              <span class="face-eye"></span>
+              <span class="face-eye"></span>
+            </div>
+            <div class="face-mouth" aria-hidden="true"></div>
+                <p id="trace-message" class="trace-message">아직 탐지되지 않았습니다.</p>
+              </div>
+            </aside>
+
+            <div class="code-panel" id="code-panel">
+            <p class="system-line" id="game-heading">&gt; SECURITY CODE REQUEST</p>
+            <div id="security-code" class="security-code" aria-live="polite">
+              <span id="security-code-text" class="security-code-text">---</span>
+            </div>
+
+            <label class="input-label" for="code-input">&gt; INPUT CODE</label>
+            <input
+              id="code-input"
+              class="code-input"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              maxlength="64"
+              aria-describedby="input-help"
+            />
+            <p id="input-help" class="sr-only">화면의 암호를 입력한 뒤 엔터 키를 누르세요.</p>
+
+            <div id="penalty-pop" class="penalty-pop" aria-hidden="true">TRACE ALERT</div>
+
+            <div class="feedback-wrap" aria-live="assertive">
+              <p id="feedback" class="feedback"></p>
+            </div>
+            </div>
+          </div>
+
+          <div class="progress-area">
+            <div class="progress-row progress-stage-row">
+              <span>CURRENT <strong id="current-length-display">3</strong> DIGITS</span>
+              <span>TARGET <strong id="target-length-display">8</strong> DIGITS</span>
+              <span>CLEARED <strong id="progress-text">0</strong></span>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="game-toolbar">
+            <div class="game-actions">
+              <button id="pause-button" class="pixel-button" type="button">[ PAUSE ]</button>
+              <button id="restart-button" class="pixel-button danger" type="button">[ RESTART ]</button>
+            </div>
+
+            <div class="inline-settings" aria-label="게임 중 효과 설정">
+              <label>
+                <input id="mute-toggle-game" type="checkbox" />
+                SOUND OFF
+              </label>
+              <label>
+                <input id="motion-toggle-game" type="checkbox" />
+                REDUCE FX
+              </label>
+            </div>
+          </div>
+
+          <div id="fail-transition" class="fail-transition" hidden aria-live="assertive">
+            <div class="fail-transition-box">
+              <p class="system-line">&gt; TRACE COMPLETE</p>
+              <strong>역추적이 완료되었습니다.</strong>
+              <span>접속 경로가 노출되었습니다.</span>
+            </div>
+          </div>
+
+          <div id="pause-overlay" class="pause-overlay" hidden>
+            <div class="pause-card" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+              <p class="system-line">&gt; PROCESS SUSPENDED</p>
+              <h2 id="pause-title">PAUSED</h2>
+              <p>현재 판의 상태와 남은 시간은 유지됩니다.</p>
+              <button id="resume-button" class="pixel-button primary" type="button">[ CONTINUE ]</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="result-screen" class="screen" aria-labelledby="result-title">
+          <div id="result-card" class="result-card">
+            <p id="result-kicker" class="system-line">&gt; SESSION CLOSED</p>
+            <h2 id="result-title">RESULT</h2>
+            <p id="result-main" class="result-main">---</p>
+
+            <div
+              id="result-face"
+              class="trace-face result-face face-safe"
+              role="img"
+              aria-label="게임 결과 상태"
+            >
+              <div class="face-eyes" aria-hidden="true">
+                <span class="face-eye"></span>
+                <span class="face-eye"></span>
+              </div>
+              <div class="face-mouth" aria-hidden="true"></div>
+            </div>
+
+            <div id="result-story" class="result-story"></div>
+
+            <dl class="result-stats">
+              <div>
+                <dt>ROUND TIME</dt>
+                <dd id="result-time">--</dd>
+              </div>
+              <div>
+                <dt>MAX CODE</dt>
+                <dd id="result-max-code">--</dd>
+              </div>
+              <div>
+                <dt>TOTAL CLEARED</dt>
+                <dd id="result-cleared">0</dd>
+              </div>
+              <div>
+                <dt>ERRORS</dt>
+                <dd id="result-errors">0</dd>
+              </div>
+              <div>
+                <dt>TRACE</dt>
+                <dd id="result-trace">0%</dd>
+              </div>
+              <div>
+                <dt>BEST MAX CODE</dt>
+                <dd id="best-max-result">--</dd>
+              </div>
+            </dl>
+
+            <button id="result-restart-button" class="pixel-button primary" type="button">[ RESTART ]</button>
+            <button id="home-button" class="pixel-button" type="button">[ MAIN MENU ]</button>
+          </div>
+        </section>
+      </div>
+
+      <footer class="terminal-footer">
+        <span>MODE: 8BIT TERMINAL</span>
+        <span>PLAY: <strong id="footer-mode-display">NORMAL</strong></span>
+        <span>START: <strong id="start-length-display">3</strong></span>
+        <span>TARGET: <strong id="target-length-footer">8</strong></span>
+        <span>SAVE: LOCAL</span>
+      </footer>
+    </section>
+  </main>
+
+  <script src="./script.js"></script>
+</body>
+</html>
