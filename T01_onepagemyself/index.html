@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="IT 인프라와 시스템 흐름에 관심이 있는 사람의 한 페이지 소개 사이트">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>◼</text></svg>">
+  <title>한 페이지 소개 | 시스템 흐름을 이해하는 사람</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    .erd-toggle {
+      margin-top: 18px;
+      border: 1px solid rgba(15, 23, 42, 0.14);
+      border-radius: 14px;
+      background: rgba(248, 250, 252, 0.9);
+      overflow: hidden;
+    }
+    .erd-toggle summary {
+      cursor: pointer;
+      padding: 16px 18px;
+      font-weight: 700;
+      list-style-position: inside;
+    }
+    .erd-toggle summary:focus-visible {
+      outline: 3px solid currentColor;
+      outline-offset: -3px;
+    }
+    .erd-panel {
+      padding: 0 18px 18px;
+    }
+    .erd-panel p {
+      margin-top: 0;
+    }
+    .erd-panel img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+    }
+  </style>
+
+
+  <style>
+    .camera-gallery {
+      margin-top: 28px;
+    }
+    .camera-gallery figure {
+      margin: 0;
+    }
+    .camera-feature {
+      display: grid;
+      gap: 10px;
+    }
+    .camera-feature img {
+      display: block;
+      width: 100%;
+      max-height: 520px;
+      object-fit: contain;
+      border-radius: 16px;
+      background: #0b0b0b;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+    }
+    .camera-feature figcaption {
+      font-size: 0.92rem;
+      opacity: 0.76;
+    }
+    .photo-section {
+      margin-top: 28px;
+    }
+    .photo-section h3 {
+      margin-bottom: 6px;
+    }
+    .photo-section > p {
+      margin-top: 0;
+      opacity: 0.78;
+    }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .photo-grid img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+    }
+    @media (max-width: 760px) {
+      .photo-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+
+  <style>
+    .photo-lightbox-trigger {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      border-radius: 14px;
+      background: transparent;
+      cursor: zoom-in;
+      overflow: hidden;
+    }
+
+    .photo-lightbox-trigger img {
+      transition: transform 220ms ease, filter 220ms ease;
+    }
+
+    .photo-lightbox-trigger:hover img,
+    .photo-lightbox-trigger:focus-visible img {
+      transform: scale(1.025);
+      filter: brightness(0.96);
+    }
+
+    .photo-lightbox-trigger:focus-visible {
+      outline: 3px solid currentColor;
+      outline-offset: 4px;
+    }
+
+    .photo-lightbox {
+      width: min(94vw, 1500px);
+      max-width: none;
+      max-height: 94vh;
+      padding: 0;
+      border: 0;
+      border-radius: 18px;
+      background: transparent;
+      overflow: visible;
+    }
+
+    .photo-lightbox::backdrop {
+      background: rgba(5, 10, 20, 0.84);
+      backdrop-filter: blur(6px);
+    }
+
+    .lightbox-stage {
+      display: grid;
+      place-items: center;
+      min-height: 40vh;
+    }
+
+    .lightbox-stage img {
+      display: block;
+      max-width: 92vw;
+      max-height: 88vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 14px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      animation: photoZoomIn 220ms ease-out both;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: -14px;
+      right: -14px;
+      z-index: 2;
+      width: 44px;
+      height: 44px;
+      border: 0;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #111827;
+      font-size: 30px;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .lightbox-close:focus-visible {
+      outline: 3px solid #ffffff;
+      outline-offset: 4px;
+    }
+
+    @keyframes photoZoomIn {
+      from {
+        opacity: 0;
+        transform: scale(0.94);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .photo-lightbox-trigger img,
+      .lightbox-stage img {
+        transition: none;
+        animation: none;
+      }
+    }
+  </style>
+
+</head>
+<body>
+  <a class="skip-link" href="#main">본문으로 바로가기</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#top" aria-label="소개 페이지 처음으로">THIS IS ME</a>
+      <nav aria-label="주요 메뉴">
+        <a href="#experience">경험</a>
+        <a href="#style">방식</a>
+        <a href="#learning">관심</a>
+        <a href="#proof">근거</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">IT INFRA · NETWORK · SECURITY</p>
+        <h1 id="hero-title">시스템의 흐름을 이해하고,<br>더 안정적으로 만드는 사람</h1>
+        <p class="hero-desc">
+          반복되는 일은 더 나은 방법으로 바꿀 수 있는지 살펴보고, 문제가 생기면 추측보다 흐름과 로그를 따라 원인을 찾습니다.
+          이 페이지는 저를 처음 알게 된 사람에게 제가 어떤 방식으로 배우고 문제를 해결해 왔는지 보여주기 위한 한 페이지 소개입니다.
+        </p>
+        <p class="need content-need">“‘기분이 태도가 되지 않게 하자’를 늘 마음에 두고, 어떤 일을 하든 순간의 감정보다 해야 할 일과 책임을 먼저 생각합니다.”</p>
+        <div class="hero-actions">
+          <a class="primary-link" href="#experience">대표 경험 보기</a>
+        </div>
+      </div>
+
+      <aside class="snapshot" aria-label="한눈에 보는 소개">
+        <p class="snapshot-title">한눈에 보는 나</p>
+        <ul>
+          <li><strong>관심</strong><span>IT 인프라 · 네트워크 · 보안</span></li>
+          <li><strong>방식</strong><span>흐름 파악 · 자동화 · 원인 분석</span></li>
+          <li><strong>활동</strong><span>업무 자동화 · DB 설계 · 장애 원인 추적</span></li>
+          <li><strong>근거</strong><span>프로젝트 결과물과 기록으로 확인</span></li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="first-proof" aria-label="대표 활동 미리보기">
+      <div><span>01</span><strong>반복 업무 자동화</strong><small>Python 프로그램을 실제 팀 사용 방식으로 전환</small></div>
+      <div><span>02</span><strong>데이터 흐름 설계</strong><small>요청부터 화면까지 연결되는 DB 구조 설계</small></div>
+      <div><span>03</span><strong>장애 원인 추적</strong><small>로그·인증서·파일 형식을 확인해 통신 오류 해결</small></div>
+    </section>
+
+    <section class="section" id="experience" aria-labelledby="experience-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">EXPERIENCE</p>
+          <h2 id="experience-title">말보다, 상황·행동·결과로 소개합니다</h2>
+        </div>
+        <p class="section-note">세 경험 모두 내가 한 행동과 관찰 가능한 결과가 드러나도록 정리했습니다.</p>
+      </div>
+
+      <div class="experience-list">
+        <article class="experience-card">
+          <div class="experience-head">
+            <div>
+              <p class="card-index">01 · AUTOMATION</p>
+              <h3>수작업으로 모으던 댓글을 프로그램으로 수집했습니다</h3>
+            </div>
+            <span class="keyword">개선 · 자동화</span>
+          </div>
+          <div class="sar-grid">
+            <div><strong>상황</strong><p>팀에서 유튜브 댓글을 직접 확인하고 수작업으로 모으고 있었습니다.</p></div>
+            <div><strong>행동</strong><p>Python으로 댓글을 수집하는 프로그램을 만들고, 다른 사람이 사용할 수 있도록 실행 방법과 함께 팀에 공유했습니다.</p></div>
+            <div><strong>결과</strong><p>수작업으로 댓글을 하나씩 모으던 과정을 프로그램 실행과 Excel 파일 생성으로 바꿔, 댓글 자료를 더 간편하게 수집해 전달할 수 있었습니다.</p></div>
+          </div>
+          <div class="reflection">
+            <strong>이 경험이 보여주는 것</strong>
+            <p>주어진 절차를 그대로 반복하기보다, 불편한 지점을 발견하면 실제 사용 가능한 개선 방법으로 연결하려고 합니다.</p>
+          </div>
+          <div class="need-row">
+            <p class="need content-need"><strong>데이터와 사용 방식</strong> 유튜브 영상 링크를 입력하면 댓글 작성자 아이디와 댓글 내용을 수집해, 영상 제목을 파일명으로 한 Excel(.xlsx) 파일로 저장하도록 구현했습니다. GUI와 실행 파일을 함께 구성해 Python 코드를 직접 실행하지 않아도 댓글 자료를 수집할 수 있도록 했습니다.</p>
+            <p class="need proof-need"><strong>공개 근거</strong> <a href="https://github.com/Taetaeeee/youthat" target="_blank" rel="noopener noreferrer">GitHub · YouTube 댓글 수집 프로그램</a><br>— 유튜브 링크 입력부터 댓글 수집, Excel 저장까지의 코드와 실행 파일을 확인할 수 있습니다.</p>
+          </div>
+        </article>
+
+        <article class="experience-card">
+          <div class="experience-head">
+            <div>
+              <p class="card-index">02 · DATA FLOW</p>
+              <h3>프린트 토너 신청 과정을 데이터 구조로 연결했습니다</h3>
+            </div>
+            <span class="keyword">DB · 협업</span>
+          </div>
+          <div class="sar-grid">
+            <div><strong>상황</strong><p>수작업으로 처리하던 프린트 토너 신청 과정을 자동화하는 팀 프로젝트를 진행했습니다.</p></div>
+            <div><strong>행동</strong><p>사용자의 토너 신청 정보를 기준으로 사용자·주문·제품·주문 상세 데이터를 구분하고, 테이블 간 관계와 필요한 컬럼을 SQL로 설계했습니다.</p></div>
+            <div><strong>결과</strong><p>토너 신청 과정에서 필요한 사용자·주문·제품 정보를 하나의 구조로 정리해, 팀이 각 기능에서 동일한 데이터 항목과 관계를 기준으로 작업할 수 있도록 했습니다.</p></div>
+          </div>
+          <div class="reflection">
+            <strong>이 경험이 보여주는 것</strong>
+            <p>내가 맡은 부분만 보는 대신 사용자·서버·데이터베이스·화면이 어떻게 이어지는지 전체 흐름을 먼저 확인합니다.</p>
+          </div>
+          <div class="need-row">
+            <p class="need content-need"><strong>데이터 구조와 설계 방식</strong> 사용자, 주문, 제품, 주문 상세 정보를 <code>Users</code>, <code>Orders</code>, <code>Products</code>, <code>OrderItems</code> 4개 테이블로 나누고, 각 테이블을 사용자·주문·제품 ID로 연결했습니다. Orders에는 주문 시각(order_date), 신청 수량(count), 프린트 유형(print_type), 토너 유형(toner_type)을 저장하고, Products에는 제품명·재고·색상을 관리하도록 구성했습니다.</p>
+            <p class="need proof-need"><strong>공개 근거</strong> 실제 프로젝트의 <code>create_table.sql</code>을 바탕으로 개인정보와 테스트 계정 정보를 제외해 공개용 ERD로 정리했습니다.</p>
+          </div>
+
+          <details class="erd-toggle">
+            <summary>공개용 ERD 보기</summary>
+            <div class="erd-panel">
+              <p>사용자 → 주문 → 주문 상세 → 제품으로 이어지는 테이블 관계와 주요 컬럼을 확인할 수 있습니다.</p>
+              <img src="ucsi_erd.png" alt="프린트 토너 신청 시스템의 Users, Orders, OrderItems, Products 테이블 관계를 정리한 공개용 ERD">
+            </div>
+          </details>
+        </article>
+
+        <article class="experience-card">
+          <div class="experience-head">
+            <div>
+              <p class="card-index">03 · TROUBLESHOOTING</p>
+              <h3>Hyperledger Fabric 통신 오류를 로그부터 추적했습니다</h3>
+            </div>
+            <span class="keyword">분석 · 복구</span>
+          </div>
+          <div class="sar-grid">
+            <div><strong>상황</strong><p>Ubuntu 환경에서 Docker 기반 Hyperledger Fabric 네트워크를 구축하던 중 Peer와 Orderer 간 통신 및 chaincode 작업 과정에서 TLS 관련 오류가 발생했습니다.</p></div>
+            <div><strong>행동</strong><p>Docker 컨테이너 상태와 Peer·Orderer 로그를 확인해 오류가 발생하는 구간을 좁혔습니다. 이후 TLS 인증서 경로와 설정값을 확인하고, <code>tlsca</code> 인증서 파일이 정상적으로 인식되는지 점검했습니다. 인증서 파일의 형식 문제를 정리한 뒤 네트워크를 다시 실행하며 통신 상태를 단계적으로 확인했습니다.</p></div>
+            <div><strong>결과</strong><p>TLS 인증서 관련 설정과 파일 문제를 수정한 후 Peer 통신을 정상화하고 chaincode 배포 및 거래 처리를 다시 진행할 수 있었습니다.</p></div>
+          </div>
+          <div class="reflection">
+            <strong>이 경험이 보여주는 것</strong>
+            <p>설정값을 무작정 변경하기보다 컨테이너 상태와 로그를 먼저 확인하고, 인증서·경로·파일 형식처럼 통신에 영향을 주는 요소를 하나씩 확인하며 원인을 좁혀가는 방식으로 문제를 해결했습니다.</p>
+          </div>
+          <div class="need-row">
+            <p class="need content-need"><strong>확인 가능한 구성</strong> 프로젝트에서 사용한 Hyperledger Fabric 네트워크의 핵심 구조를 개인정보와 민감한 인증서 정보 없이 공개용으로 정리했습니다. Python 스크립트에서 `peer chaincode invoke/query`를 실행해 Peer·Orderer와 통신하고, `SetMapping`/`GetMapping`으로 World State에 데이터를 저장·조회하는 흐름과 TLS 인증서 경로를 한눈에 볼 수 있습니다.</p>
+            <p class="need proof-need"><strong>공개 근거</strong> 실제 프로젝트에서 사용한 Fabric 네트워크 구조와 chaincode 호출 흐름을 바탕으로 공개용 구성 근거를 제작했습니다. 개인 정보, 학교·팀 식별 정보, 인증서 원문과 비밀값은 포함하지 않았습니다.</p>
+          </div>
+
+          <details class="erd-toggle">
+            <summary>Fabric 구성 근거 보기</summary>
+            <div class="erd-panel">
+              <p>실제 `submit_mapping.py`, `ascii_mapping_chaincode.go`, `compose-test-net.yaml`에 있는 호출 흐름과 TLS 설정만 공개용으로 정리한 자료입니다.</p>
+              <img src="fabric_evidence.png" alt="Hyperledger Fabric의 Application, Peer, Chaincode, Ledger, Orderer 관계와 트러블슈팅 확인 지점을 정리한 공개용 구성 근거">
+            </div>
+          </details>
+        </article>
+      </div>
+    </section>
+
+    <section class="section split-section" id="style" aria-labelledby="style-title">
+      <div class="split-intro">
+        <p class="eyebrow">WORK STYLE</p>
+        <h2 id="style-title">경험을 통해 만들어진 나의 기준</h2>
+        <p>기술 이름을 많이 아는 것보다, 지금 보고 있는 문제가 시스템의 어느 지점에서 발생했는지 설명할 수 있는 사람이 되고 싶습니다.</p>
+      </div>
+      <div class="principle-list">
+        <article>
+          <span>01</span>
+          <div><h3>먼저 전체 흐름을 봅니다</h3><p>내 작업의 앞뒤 단계와 연결 지점을 확인한 뒤 세부 작업으로 들어갑니다.</p></div>
+        </article>
+        <article>
+          <span>02</span>
+          <div><h3>반복되는 일에는 이유를 묻습니다</h3><p>반복 자체가 목적이 되지 않도록, 자동화하거나 더 단순하게 만들 수 있는지 살펴봅니다.</p></div>
+        </article>
+        <article>
+          <span>03</span>
+          <div><h3>해결 과정을 남깁니다</h3><p>문제를 한 번 해결하는 데서 끝내지 않고, 다음 사람이 다시 확인할 수 있도록 변경 사항과 원인을 정리합니다.</p></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="learning" aria-labelledby="learning-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">LEARNING</p>
+          <h2 id="learning-title">지금까지 쌓아 온 기반과 관심 분야</h2>
+        </div>
+      </div>
+      <div class="learning-grid">
+        <article class="learning-card main-learning">
+          <h3>IT 인프라를 이해하기 위한 기반</h3>
+          <p>컴퓨터공학 전공 과정에서 네트워크, 데이터베이스, 정보보안, 클라우드 등 시스템을 구성하는 기본 영역을 공부해 왔습니다.</p>
+          <div class="tag-list" aria-label="관심 기술">
+            <span>Network</span><span>Linux</span><span>Database</span><span>Security</span><span>Cloud</span><span>Python</span>
+          </div>
+        </article>
+        <article class="learning-card">
+          <p class="mini-label">CERTIFICATE</p>
+          <h3>확인 가능한 학습 결과</h3>
+          <ul class="simple-list">
+            <li>네트워크관리사 2급 취득</li>
+            <li>정보처리기사 필기 합격</li>
+          </ul>
+        </article>
+        <article class="learning-card">
+          <p class="mini-label">NOW</p>
+          <h3>요즘 더 알고 싶은 것</h3>
+          <p>현재 리눅스마스터 2급 2차 시험을 준비하며 Linux 명령어와 시스템 운영에 필요한 기초를 공부하고 있습니다.<br><br>Cisco Packet Tracer를 활용해 네트워크를 직접 구성하고 동작을 확인하는 실습을 하고 있습니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section personal-section" aria-labelledby="personal-title">
+      <div>
+        <p class="eyebrow">ABOUT ME</p>
+        <h2 id="personal-title">기술 이야기 밖의 나</h2>
+        <p class="personal-lead">한 페이지가 이력서 복사본처럼 보이지 않도록, 일을 하지 않을 때 좋아하는 것도 조금 남겼습니다.</p>
+      </div>
+      <div class="personal-copy">
+        <p>손으로 작은 결과물을 만드는 실링왁스와 키링 만들기를 좋아합니다.<br><br>
+        몸을 움직일 때는 수영과 배드민턴을 즐깁니다.<br><br>
+        사진 찍는 것도 좋아해서 여러 디지털 카메라를 모으고 있습니다.</p>
+        <button class="text-button" type="button" id="toggleLikesSecondary" aria-expanded="false" aria-controls="likesPanel">취향을 조금 더 보기</button>
+      </div>
+    </section>
+
+    <section class="likes-panel" id="likesPanel" aria-labelledby="likes-title" hidden>
+      <div>
+        <p class="eyebrow">LIKES</p>
+        <h2 id="likes-title">작은 결과물이 남는 활동을 좋아합니다</h2>
+        <p>직접 만들고 완성된 결과를 눈으로 확인할 수 있는 활동을 좋아합니다. 사진도 같은 이유로 즐기고 있으며, 카메라마다 조금씩 다른 색감과 느낌을 경험하는 것도 좋아합니다.</p>
+
+        <div class="camera-gallery" aria-label="디지털 카메라와 직접 촬영한 사진">
+          <figure class="camera-feature">
+            <img src="camera_collection.png" alt="보유하고 있는 여러 디지털 카메라">
+            <figcaption>모으고 있는 디지털 카메라 중 일부</figcaption>
+          </figure>
+
+          <div class="photo-section">
+            <h3>직접 찍은 사진</h3>
+            <p>가지고 있는 디지털 카메라로 직접 찍은 사진입니다.</p>
+            <div class="photo-grid">
+              <figure>
+                <button class="photo-lightbox-trigger" type="button"
+                        data-full="photo_sea.jpg"
+                        data-alt="직접 촬영한 바다와 바위 풍경"
+                        aria-label="바다와 바위 풍경 사진 크게 보기">
+                  <img src="photo_sea.jpg" alt="직접 촬영한 바다와 바위 풍경" loading="lazy">
+                </button>
+              </figure>
+              <figure>
+                <button class="photo-lightbox-trigger" type="button"
+                        data-full="photo_building.jpg"
+                        data-alt="직접 촬영한 건물 풍경"
+                        aria-label="건물 풍경 사진 크게 보기">
+                  <img src="photo_building.jpg" alt="직접 촬영한 건물 풍경" loading="lazy">
+                </button>
+              </figure>
+              <figure>
+                <button class="photo-lightbox-trigger" type="button"
+                        data-full="photo_park.jpg"
+                        data-alt="직접 촬영한 나무와 호수 풍경"
+                        aria-label="나무와 호수 풍경 사진 크게 보기">
+                  <img src="photo_park.jpg" alt="직접 촬영한 나무와 호수 풍경" loading="lazy">
+                </button>
+              </figure>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section proof-section" id="proof" aria-labelledby="proof-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">PUBLIC EVIDENCE</p>
+          <h2 id="proof-title">다른 사람이 확인할 수 있는 근거</h2>
+        </div>
+        <p class="section-note">과제 제출 전 최소 1개는 실제 공개 자료로 연결합니다.</p>
+      </div>
+      <div class="proof-grid">
+        <article>
+          <span class="proof-no">01</span>
+          <h3>자동화 경험</h3>
+          <p><a href="https://github.com/Taetaeeee/youthat" target="_blank" rel="noopener noreferrer">GitHub · 유튜브 댓글 수집 프로그램</a></p>
+        </article>
+        <article>
+          <span class="proof-no">02</span>
+          <h3>DB 설계 경험</h3>
+          <p>실제 프로젝트의 <code>create_table.sql</code>을 바탕으로 정리한 공개용 ERD에서 Users · Orders · Products · OrderItems의 관계와 주요 컬럼을 확인할 수 있습니다.</p>
+        </article>
+        <article>
+          <span class="proof-no">03</span>
+          <h3>문제 해결 경험</h3>
+          <p>03번 경험의 <strong>Fabric 구성 근거 보기</strong>에서 Peer·Orderer·Chaincode·Ledger 관계와 TLS 관련 확인 지점을 정리한 공개용 자료를 확인할 수 있습니다.</p>
+        </article>
+      </div>
+      <div class="proof-rule">
+        <strong>공개 범위</strong>
+        <p><b>공개:</b> 관심 분야 · 프로젝트 경험 · 학습/자격 · 취향/사진 · 공개 가능한 결과물</p>
+        <p><b>비공개:</b> 전화번호 · 개인 이메일 · 상세 주소 · 학번/수험번호 · 계정 비밀값</p>
+      </div>
+    </section>
+  </main>
+  <dialog class="photo-lightbox" id="photoLightbox" aria-label="확대된 사진 보기">
+    <button class="lightbox-close" type="button" aria-label="확대 사진 닫기">×</button>
+    <div class="lightbox-stage">
+      <img id="lightboxImage" src="" alt="">
+    </div>
+  </dialog>
+
+  <script src="script.js"></script>
+
+  <script>
+    (() => {
+      const dialog = document.getElementById('photoLightbox');
+      const lightboxImage = document.getElementById('lightboxImage');
+      const closeButton = dialog?.querySelector('.lightbox-close');
+      const triggers = document.querySelectorAll('.photo-lightbox-trigger');
+
+      if (!dialog || !lightboxImage || !closeButton || !triggers.length) return;
+
+      let lastTrigger = null;
+
+      const openLightbox = (trigger) => {
+        lastTrigger = trigger;
+        lightboxImage.src = trigger.dataset.full;
+        lightboxImage.alt = trigger.dataset.alt || '';
+        dialog.showModal();
+        closeButton.focus();
+      };
+
+      const closeLightbox = () => {
+        dialog.close();
+      };
+
+      triggers.forEach((trigger) => {
+        trigger.addEventListener('click', () => openLightbox(trigger));
+      });
+
+      closeButton.addEventListener('click', closeLightbox);
+
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) closeLightbox();
+      });
+
+      dialog.addEventListener('close', () => {
+        lightboxImage.src = '';
+        if (lastTrigger) lastTrigger.focus();
+      });
+    })();
+  </script>
+
+</body>
+</html>
