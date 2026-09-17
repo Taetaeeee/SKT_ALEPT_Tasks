@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="JPY 여행비, CNY 직구비, USD 해외결제·미국주식까지 환율을 생활 금액으로 보여주는 T04 정보판">
+  <title>오늘의 생활 환율 | T04</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./js/app.js"></script>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <p class="eyebrow">T04 · 오늘의 진짜 정보판</p>
+      <h1>오늘의 생활 환율</h1>
+      <p class="lead">
+        일본 여행의 엔화, 중국 직구의 위안화, 해외 결제와 미국주식의 달러를
+        원화로 이해하기 쉽게 보여줍니다. 현재 단계에서는 실제 공개 환율을 조회하고
+        원천 시각과 조회 시각을 분리해 표시합니다.
+      </p>
+
+      <div class="status-bar">
+        <div class="status" id="status" data-state="loading" role="status" aria-live="polite">
+          <span id="status-text">공개 환율을 조회하는 중입니다.</span>
+        </div>
+        <button class="refresh" type="button" id="refresh-button">최신 환율 다시 조회</button>
+      </div>
+      <div id="error-box" class="error" hidden></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section aria-labelledby="rates-title">
+      <div class="section-title">
+        <h2 id="rates-title">현재 환율</h2>
+        <p>한 번의 USD 기준 공개 응답에서 JPY·CNY·KRW 값을 계산합니다.</p>
+      </div>
+
+      <div class="cards">
+        <article class="card">
+          <div class="flag" aria-hidden="true">🇯🇵</div>
+          <h3>일본 여행 · JPY</h3>
+          <p class="rate" id="jpy-value">—</p>
+          <p class="unit">100 JPY 기준</p>
+          <p class="context">T04의 대표 기록 신호로 사용할 예정입니다. 다음 단계에서 여행 예산과 실제 이틀 기록을 연결합니다.</p>
+        </article>
+
+        <article class="card">
+          <div class="flag" aria-hidden="true">🇨🇳</div>
+          <h3>중국 직구 · CNY</h3>
+          <p class="rate" id="cny-value">—</p>
+          <p class="unit">1 CNY 기준</p>
+          <p class="context">다음 단계에서 타오바오·알리·테무 등 직구 상품 금액과 배송비의 단순 원화 환산 기능을 연결합니다.</p>
+        </article>
+
+        <article class="card">
+          <div class="flag" aria-hidden="true">🇺🇸</div>
+          <h3>해외결제·미국주식 · USD</h3>
+          <p class="rate" id="usd-value">—</p>
+          <p class="unit">1 USD 기준</p>
+          <p class="context">다음 단계에서 해외 자격증 결제액, 미국주식 매수금액과 보유 달러자산의 원화 환산 기능을 연결합니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="source-title">
+      <div class="section-title">
+        <h2 id="source-title">데이터 출처와 시각</h2>
+        <p>원천이 발표한 기준 시각과 이 브라우저가 실제로 조회한 시각을 구분합니다.</p>
+      </div>
+
+      <div class="panel meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">출처</span>
+          <strong class="meta-value"><a id="source-link" href="https://open.er-api.com/v6/latest/USD" target="_blank" rel="noopener noreferrer">ExchangeRate-API 원자료</a></strong>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">기준 시간대</span>
+          <strong class="meta-value" id="timezone">Asia/Seoul (KST)</strong>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">조회 경로</span>
+          <strong class="meta-value" id="fetch-mode">확인 중…</strong>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">원천 기준 시각</span>
+          <strong class="meta-value" id="source-observed-at">—</strong>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">조회 시각</span>
+          <strong class="meta-value" id="fetched-at">—</strong>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="verify-title">
+      <div class="section-title">
+        <h2 id="verify-title">T04 데이터 검증</h2>
+        <p>JPY 대표 신호가 원자료에서 어떤 계산을 거쳐 화면값이 되는지 공개합니다.</p>
+      </div>
+
+      <div class="panel">
+        <table class="verify-table">
+          <tbody>
+            <tr>
+              <th scope="row">원자료 KRW</th>
+              <td><code>rates.KRW</code> = <span id="raw-krw">—</span></td>
+            </tr>
+            <tr>
+              <th scope="row">원자료 JPY</th>
+              <td><code>rates.JPY</code> = <span id="raw-jpy">—</span></td>
+            </tr>
+            <tr>
+              <th scope="row">참고 CNY</th>
+              <td><code>rates.CNY</code> = <span id="raw-cny">—</span></td>
+            </tr>
+            <tr>
+              <th scope="row">JPY 계산 규칙</th>
+              <td><code>rates.KRW ÷ rates.JPY × 100</code></td>
+            </tr>
+            <tr>
+              <th scope="row">정규화 결과</th>
+              <td id="normalized-jpy">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="record-title">
+      <div class="section-title">
+        <h2 id="record-title">실제 일별 기록</h2>
+        <p>현재는 기록 기능을 붙이기 전 단계입니다. <code>data/live-records.json</code>은 빈 배열로 시작합니다.</p>
+      </div>
+      <div class="notice">
+        페이지를 열었다는 이유만으로 실제 일별 기록을 자동 추가하지 않습니다.
+        다음 단계에서 현재 JPY 값을 과제용 JSON으로 생성하고, 서로 다른 KST 날짜의 실제 기록 정확히 2건을 GitHub에 보존합니다.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      환율은 공개 환율 정보의 단순 환산값이며 실제 카드사·은행·증권사 적용 환율과 다를 수 있습니다.<br>
+      Rates by <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer">ExchangeRate-API</a> · 마지막 브라우저 조회: <span id="last-updated">—</span>
+    </div>
+  </footer>
+</body>
+</html>
