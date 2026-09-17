@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+  schedule:
+    # ExchangeRate-API open data updates roughly once per day.
+    # 00:30 UTC = 09:30 KST: fetch after the usual source refresh window.
+    - cron: '30 0 * * *'
   workflow_dispatch:
 
 permissions:
@@ -24,6 +28,38 @@ jobs:
     steps:
       - name: Checkout current main
         uses: actions/checkout@v6
+
+      - name: Fetch current public exchange rates
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            --retry 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 25 \
+            'https://open.er-api.com/v6/latest/USD' \
+            -o /tmp/t04-rates.json
+          node T04_exchange_board/scripts/build-current-rates.mjs \
+            /tmp/t04-rates.json \
+            T04_exchange_board/data/current-rates.json
+
+      - name: Validate T04 deployment files
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            'T04_exchange_board/index.html'
+            'T04_exchange_board/style.css'
+            'T04_exchange_board/js/app.js'
+            'T04_exchange_board/js/calculators.js'
+            'T04_exchange_board/data/current-rates.json'
+          )
+          for file in "${required[@]}"; do
+            test -s "$file" || { echo "Missing or empty required file: $file"; exit 1; }
+          done
+          node --check T04_exchange_board/js/app.js
+          node --check T04_exchange_board/js/calculators.js
+          node -e "const s=require('./T04_exchange_board/data/current-rates.json'); if(!s.raw?.rates?.KRW||!s.raw?.rates?.JPY||!s.raw?.rates?.CNY) process.exit(1)"
+          echo 'T04 required files validated.'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
