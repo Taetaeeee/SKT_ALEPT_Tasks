@@ -1,0 +1,22 @@
+[
+  {
+    "kind": "t04_day",
+    "signal_id": "jpy-100-krw",
+    "record_date": "2026-09-17",
+    "source_name": "ExchangeRate-API",
+    "source_url": "https://open.er-api.com/v6/latest/USD",
+    "source_observed_at": "2026-09-17T00:02:31.000Z",
+    "normalized_value": 880.4595,
+    "unit": "KRW/100JPY",
+    "fetched_at": "2026-09-17T07:11:00.000Z",
+    "record_timezone": "Asia/Seoul",
+    "raw": {
+      "base_code": "USD",
+      "rates": {
+        "KRW": 1369.81121,
+        "JPY": 155.579132
+      },
+      "formula": "rates.KRW / rates.JPY * 100"
+    }
+  }
+]

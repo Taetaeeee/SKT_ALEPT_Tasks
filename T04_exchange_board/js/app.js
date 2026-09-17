@@ -1,5 +1,6 @@
 import { setupCalculators } from './calculators.js';
 import { setupSyntheticReplay } from './replay.js';
+import { setupLiveRecords } from './live-records.js';
 
 const LIVE_SOURCE_URL = 'https://open.er-api.com/v6/latest/USD';
 const SNAPSHOT_URL = new URL('../data/current-rates.json', import.meta.url);
@@ -333,4 +334,8 @@ loadRates();
 
 setupSyntheticReplay().catch((error) => {
   console.error('T04 synthetic replay setup failed:', error);
+});
+
+setupLiveRecords().catch((error) => {
+  console.error('T04 preserved live records setup failed:', error);
 });

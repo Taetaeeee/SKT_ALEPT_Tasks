@@ -1,0 +1,10 @@
+{
+  "checked_at_kst": "2026-09-17T16:11:00+09:00",
+  "source_url": "https://open.er-api.com/v6/latest/USD",
+  "source_observed_at": "2026-09-17T00:02:31.000Z",
+  "raw_krw": 1369.81121,
+  "raw_jpy": 155.579132,
+  "formula": "1369.81121 / 155.579132 * 100",
+  "normalized_value": 880.4595,
+  "unit": "KRW/100JPY"
+}
