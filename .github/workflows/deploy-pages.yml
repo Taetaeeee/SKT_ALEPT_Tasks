@@ -6,12 +6,12 @@ on:
       - main
   schedule:
     # ExchangeRate-API open data updates roughly once per day.
-    # 00:30 UTC = 09:30 KST: fetch after the usual source refresh window.
+    # 00:30 UTC = 09:30 KST.
     - cron: '30 0 * * *'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -25,9 +25,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout current main
+      - name: Checkout current main with history
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Fetch current public exchange rates
         shell: bash
@@ -38,28 +41,51 @@ jobs:
             --connect-timeout 10 --max-time 25 \
             'https://open.er-api.com/v6/latest/USD' \
             -o /tmp/t04-rates.json
+
           node T04_exchange_board/scripts/build-current-rates.mjs \
             /tmp/t04-rates.json \
             T04_exchange_board/data/current-rates.json
 
-      - name: Validate T04 deployment files
+      - name: Preserve second actual KST-day record when eligible
         shell: bash
         run: |
           set -euo pipefail
-          required=(
-            'T04_exchange_board/index.html'
-            'T04_exchange_board/style.css'
-            'T04_exchange_board/js/app.js'
-            'T04_exchange_board/js/calculators.js'
-            'T04_exchange_board/data/current-rates.json'
-          )
-          for file in "${required[@]}"; do
-            test -s "$file" || { echo "Missing or empty required file: $file"; exit 1; }
-          done
+          node T04_exchange_board/scripts/capture-second-live-record.mjs \
+            /tmp/t04-rates.json \
+            T04_exchange_board/data/live-records.json
+
+      - name: Validate T04 source and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+
           node --check T04_exchange_board/js/app.js
           node --check T04_exchange_board/js/calculators.js
-          node -e "const s=require('./T04_exchange_board/data/current-rates.json'); if(!s.raw?.rates?.KRW||!s.raw?.rates?.JPY||!s.raw?.rates?.CNY) process.exit(1)"
-          echo 'T04 required files validated.'
+          node --check T04_exchange_board/js/replay.js
+          node --check T04_exchange_board/js/replay-core.js
+          node --check T04_exchange_board/js/history.js
+          node --check T04_exchange_board/js/live-records.js
+          node --check T04_exchange_board/scripts/capture-second-live-record.mjs
+          node --check T04_exchange_board/scripts/preflight.mjs
+
+          node T04_exchange_board/scripts/preflight.mjs
+          bash T04_exchange_board/scripts/scan-git-history-secrets.sh
+
+      - name: Commit newly preserved second live record
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- T04_exchange_board/data/live-records.json; then
+            echo 'No new live-day evidence to commit.'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add T04_exchange_board/data/live-records.json
+          git commit -m 'chore(t04): preserve second live exchange-rate record'
+          git push
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
