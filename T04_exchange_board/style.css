@@ -32,9 +32,9 @@ h1{font-size:clamp(2.55rem,5.3vw,4rem);margin:8px 0 8px;letter-spacing:-.05em;co
 .live b{display:block;font-size:12px;letter-spacing:.05em}.live small{display:block;font-size:10px;color:#698072;margin-top:2px}
 .status-row{display:grid;grid-template-columns:1fr auto;background:#f8fafc;border:1px solid var(--line);border-top:0}
 .status{display:flex;align-items:center;gap:10px;padding:13px 16px;color:#4d6075;font-size:13px;font-weight:700}
-.status::before{content:"";width:8px;height:8px;border-radius:50%;background:#8a97a5}.status[data-state="fresh"]::before{background:var(--green)}.status[data-state="error"]::before{background:var(--red)}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:#8a97a5}.status[data-state="fresh"]::before{background:var(--green)}.status[data-state="stale"]::before{background:var(--gold)}.status[data-state="error"]::before{background:var(--red)}
 .refresh{border:0;border-left:1px solid var(--line);background:#dce6f1;color:var(--navy);font-weight:800;padding:0 20px;cursor:pointer}.refresh:hover{background:#cfdae7}.refresh:disabled{opacity:.6;cursor:wait}
-.error{margin-top:12px;border:1px solid #e0bbbb;background:var(--red-bg);color:#8f3636;padding:13px 15px;font-size:13px}
+.error{margin-top:12px;border:1px solid #e0bbbb;background:var(--red-bg);color:#8f3636;padding:13px 15px;font-size:13px}.error[data-kind="stale"]{border-color:#d8c69d;background:#fffaf0;color:#72551d}
 .ticker{display:grid;grid-template-columns:repeat(3,1fr) .7fr;background:var(--navy);color:#fff;margin:0 0 42px}
 .ticker-item,.ticker-source{padding:18px 20px;border-right:1px solid var(--line-dark)}
 .ticker-item span,.ticker-source span{display:block;font-size:10px;color:#9fb0c5;letter-spacing:.09em;font-weight:800}.ticker-item b{display:block;font-size:24px;letter-spacing:-.03em;margin-top:2px}.ticker-item em{display:block;font-style:normal;font-size:10px;color:#8ea3ba;margin-top:2px}.ticker-source{display:flex;flex-direction:column;justify-content:center;border-right:0}.ticker-source strong{font-size:22px;margin:2px 0}.ticker-source small{color:#93a7bd;font-size:10px}
