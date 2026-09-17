@@ -26,6 +26,7 @@
 .replay-status-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:2px solid var(--navy)}
 .replay-status-head span{display:block;color:#7d8b9a;font-size:10px}
 .replay-status-head strong{display:block;margin-top:2px;color:var(--navy);font-size:17px}
+.stale-badge[hidden]{display:none!important}
 .stale-badge{padding:6px 8px;background:#fff3e8;color:#8c5622!important;border:1px solid #e7c6a7;font-size:9px!important;font-weight:900;letter-spacing:.05em}
 .replay-metrics{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-bottom:0;margin-top:14px}
 .replay-metrics>div{padding:12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
