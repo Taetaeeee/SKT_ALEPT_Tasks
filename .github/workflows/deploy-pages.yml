@@ -69,6 +69,8 @@ jobs:
           node --check T04_exchange_board/scripts/preflight.mjs
 
           node T04_exchange_board/scripts/preflight.mjs
+          node T04_exchange_board/scripts/verify-fixtures.mjs
+          node T04_exchange_board/scripts/final-audit.mjs
           bash T04_exchange_board/scripts/scan-git-history-secrets.sh
 
       - name: Commit newly preserved second live record
