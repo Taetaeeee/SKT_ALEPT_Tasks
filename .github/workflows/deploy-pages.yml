@@ -5,9 +5,9 @@ on:
     branches:
       - main
   schedule:
-    # ExchangeRate-API open data updates roughly once per day.
-    # 00:30 UTC = 09:30 KST.
-    - cron: '30 0 * * *'
+    # 01:00 UTC = 10:00 KST
+    # ExchangeRate-API 일일 갱신 이후 여유를 두고 실행
+    - cron: '0 1 * * *'
   workflow_dispatch:
 
 permissions:
@@ -24,11 +24,12 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout current main with history
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -36,6 +37,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           curl --fail --silent --show-error \
             --retry 3 --retry-all-errors \
             --connect-timeout 10 --max-time 25 \
@@ -50,6 +52,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
           node T04_exchange_board/scripts/capture-second-live-record.mjs \
             /tmp/t04-rates.json \
             T04_exchange_board/data/live-records.json
@@ -65,8 +68,12 @@ jobs:
           node --check T04_exchange_board/js/replay-core.js
           node --check T04_exchange_board/js/history.js
           node --check T04_exchange_board/js/live-records.js
+
+          node --check T04_exchange_board/scripts/build-current-rates.mjs
           node --check T04_exchange_board/scripts/capture-second-live-record.mjs
           node --check T04_exchange_board/scripts/preflight.mjs
+          node --check T04_exchange_board/scripts/verify-fixtures.mjs
+          node --check T04_exchange_board/scripts/final-audit.mjs
 
           node T04_exchange_board/scripts/preflight.mjs
           node T04_exchange_board/scripts/verify-fixtures.mjs
@@ -80,14 +87,28 @@ jobs:
 
           if git diff --quiet -- T04_exchange_board/data/live-records.json; then
             echo 'No new live-day evidence to commit.'
-            exit 0
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+            git add T04_exchange_board/data/live-records.json
+            git commit -m 'chore(t04): preserve second live exchange-rate record'
+            git push
           fi
 
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add T04_exchange_board/data/live-records.json
-          git commit -m 'chore(t04): preserve second live exchange-rate record'
-          git push
+      - name: Final audit when two actual records exist
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          count="$(node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('T04_exchange_board/data/live-records.json','utf8')); process.stdout.write(String(x.length));")"
+
+          if [ "$count" = "2" ]; then
+            echo 'Two actual KST-day records found. Running final data audit.'
+            node T04_exchange_board/scripts/final-audit.mjs --final
+          else
+            echo "Actual live records: $count/2. Final audit will run automatically after the second date is preserved."
+          fi
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
