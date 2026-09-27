@@ -15,6 +15,8 @@ const ratioButtons = [...document.querySelectorAll(".ratio-btn")];
 const downloadBtn = document.querySelector("#downloadBtn");
 const resetBtn = document.querySelector("#resetBtn");
 const imagePositionBtn = document.querySelector("#imagePositionBtn");
+const imageScale = document.querySelector("#imageScale");
+const imageScaleValue = document.querySelector("#imageScaleValue");
 const templateNameInput = document.querySelector("#templateNameInput");
 const saveTemplateBtn = document.querySelector("#saveTemplateBtn");
 const templateMessage = document.querySelector("#templateMessage");
@@ -60,6 +62,7 @@ const state = {
   imageData: "",
   imageOffsetX: 0,
   imageOffsetY: 0,
+  imageScale: 100,
   ratio: "1:1",
   texts: [createTextBlock()],
   activeTextId: 1,
@@ -141,7 +144,9 @@ function setCanvasRatio(ratio) {
 }
 
 function getImageCoverLayout(img) {
-  const scale = Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+  const coverScale = Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+  const userScale = Math.max(50, Math.min(200, Number(state.imageScale) || 100)) / 100;
+  const scale = coverScale * userScale;
   const width = img.naturalWidth * scale;
   const height = img.naturalHeight * scale;
   const overflowX = Math.max(0, width - canvas.width);
@@ -165,6 +170,14 @@ function updateImagePositionButton() {
   imagePositionBtn.classList.toggle("is-active", imageMoveMode && hasImage);
   imagePositionBtn.setAttribute("aria-pressed", String(imageMoveMode && hasImage));
   canvas.classList.toggle("image-move-mode", imageMoveMode && hasImage);
+  imageScale.disabled = !hasImage;
+}
+
+function updateImageScaleUI() {
+  const clampedScale = Math.max(50, Math.min(200, Number(state.imageScale) || 100));
+  state.imageScale = clampedScale;
+  imageScale.value = String(clampedScale);
+  imageScaleValue.value = `${clampedScale}%`;
 }
 
 function setImageMoveMode(enabled) {
@@ -175,6 +188,12 @@ function setImageMoveMode(enabled) {
 function resetImagePosition() {
   state.imageOffsetX = 0;
   state.imageOffsetY = 0;
+}
+
+function resetImageTransform() {
+  resetImagePosition();
+  state.imageScale = 100;
+  updateImageScaleUI();
 }
 
 function splitTextIntoLines(text) {
@@ -680,6 +699,9 @@ function loadTemplate(id) {
   state.imageData = template.imageData || "";
   state.imageOffsetX = Number.isFinite(template.imageOffsetX) ? template.imageOffsetX : 0;
   state.imageOffsetY = Number.isFinite(template.imageOffsetY) ? template.imageOffsetY : 0;
+  // AI A 단계에서는 템플릿에 확대율을 아직 저장하지 않는다. AI B가 Z09/Z10에서 이어서 구현한다.
+  state.imageScale = 100;
+  updateImageScaleUI();
   setImageMoveMode(false);
   loadedTemplateId = template.id;
 
@@ -732,7 +754,7 @@ function loadImageFile(file) {
     state.image = candidateImage;
     state.imageName = file.name;
     state.imageData = compressImageForTemplate(candidateImage);
-    resetImagePosition();
+    resetImageTransform();
     setImageMoveMode(false);
     updateImagePositionButton();
     setMessage(`"${file.name}" 이미지를 불러왔습니다.`, "success");
@@ -942,6 +964,13 @@ textColor.addEventListener("input", () => {
   render();
 });
 
+imageScale.addEventListener("input", () => {
+  if (!state.image) return;
+  state.imageScale = Math.max(50, Math.min(200, Number(imageScale.value) || 100));
+  updateImageScaleUI();
+  render();
+});
+
 ratioButtons.forEach((button) => {
   button.addEventListener("click", () => {
     state.ratio = button.dataset.ratio;
@@ -1073,7 +1102,7 @@ resetBtn.addEventListener("click", () => {
   state.image = null;
   state.imageName = "";
   state.imageData = "";
-  resetImagePosition();
+  resetImageTransform();
   setImageMoveMode(false);
   updateImagePositionButton();
   state.ratio = "1:1";
@@ -1094,6 +1123,7 @@ resetBtn.addEventListener("click", () => {
 
 restoreTemplatesFromStorage();
 setCanvasRatio(state.ratio);
+updateImageScaleUI();
 updateImagePositionButton();
 renderTextEditors();
 renderTemplateList();
