@@ -367,6 +367,7 @@ function buildTemplateSnapshot(id, name) {
     imageData: state.image ? compressImageForTemplate(state.image) : "",
     imageOffsetX: state.imageOffsetX,
     imageOffsetY: state.imageOffsetY,
+    imageScale: state.imageScale,
     texts: state.texts.map((item) => ({
       text: item.text,
       x: item.x,
@@ -404,6 +405,7 @@ function restoreTemplatesFromStorage() {
       ...template,
       imageOffsetX: Number.isFinite(template.imageOffsetX) ? template.imageOffsetX : 0,
       imageOffsetY: Number.isFinite(template.imageOffsetY) ? template.imageOffsetY : 0,
+      imageScale: Number.isFinite(template.imageScale) && template.imageScale >= 50 && template.imageScale <= 200 ? template.imageScale : 100,
     })) : [];
   } catch (error) {
     console.error("저장된 템플릿 읽기 실패:", error);
@@ -463,6 +465,7 @@ function validateTemplateForJson(template, index, seenIds) {
   if (template.imageData && !/^data:image\/(?:png|jpeg|webp);base64,/i.test(template.imageData)) return `${prefix}의 imageData 형식이 올바르지 않습니다.`;
   if ("imageOffsetX" in template && !isFiniteNumberInRange(template.imageOffsetX, -100, 100)) return `${prefix}의 imageOffsetX 값이 -100~100 범위를 벗어났습니다.`;
   if ("imageOffsetY" in template && !isFiniteNumberInRange(template.imageOffsetY, -100, 100)) return `${prefix}의 imageOffsetY 값이 -100~100 범위를 벗어났습니다.`;
+  if ("imageScale" in template && !isFiniteNumberInRange(template.imageScale, 50, 200)) return `${prefix}의 imageScale 값이 50~200 범위를 벗어났습니다.`;
   if (!Array.isArray(template.texts) || template.texts.length < 1) return `${prefix}의 texts는 문구 1개 이상을 포함한 배열이어야 합니다.`;
   if (!Number.isFinite(template.updatedAt)) return `${prefix}의 updatedAt이 숫자가 아닙니다.`;
 
@@ -552,6 +555,7 @@ async function importTemplatesFromJsonFile(file) {
     imageData: template.imageData,
     imageOffsetX: Number.isFinite(template.imageOffsetX) ? template.imageOffsetX : 0,
     imageOffsetY: Number.isFinite(template.imageOffsetY) ? template.imageOffsetY : 0,
+    imageScale: Number.isFinite(template.imageScale) ? template.imageScale : 100,
     texts: template.texts.map((text) => ({
       text: text.text,
       x: text.x,
@@ -699,8 +703,7 @@ function loadTemplate(id) {
   state.imageData = template.imageData || "";
   state.imageOffsetX = Number.isFinite(template.imageOffsetX) ? template.imageOffsetX : 0;
   state.imageOffsetY = Number.isFinite(template.imageOffsetY) ? template.imageOffsetY : 0;
-  // AI A 단계에서는 템플릿에 확대율을 아직 저장하지 않는다. AI B가 Z09/Z10에서 이어서 구현한다.
-  state.imageScale = 100;
+  state.imageScale = Number.isFinite(template.imageScale) ? template.imageScale : 100;
   updateImageScaleUI();
   setImageMoveMode(false);
   loadedTemplateId = template.id;
