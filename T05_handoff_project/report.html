@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>T05 AI 비교 보고서</title>
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#ffffff; --text:#16181d; --muted:#646b76;
+      --line:#e6e8ee; --accent:#2f6feb; --good:#137333; --warn:#9a6700;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg); color:var(--text); line-height:1.6;
+    }
+    .wrap{max-width:960px; margin:0 auto; padding:40px 20px 72px}
+    h1{font-size:34px; margin:0 0 8px}
+    h2{font-size:22px; margin:0 0 16px}
+    p{margin:8px 0}
+    .lead{color:var(--muted); margin-bottom:28px}
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:16px;
+      padding:24px; margin:18px 0; box-shadow:0 3px 14px rgba(0,0,0,.03);
+    }
+    table{width:100%; border-collapse:collapse; margin-top:8px}
+    th,td{border-bottom:1px solid var(--line); padding:12px 10px; text-align:left}
+    th{background:#fafbfc}
+    code{background:#f1f3f5; padding:2px 6px; border-radius:6px; overflow-wrap:anywhere}
+    ul,ol{padding-left:22px}
+    .pass{color:var(--good); font-weight:700}
+    .note{color:var(--muted); font-size:14px}
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+    .mini{border:1px solid var(--line); border-radius:12px; padding:16px}
+    @media(max-width:720px){.grid{grid-template-columns:1fr} table{font-size:14px}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <h1>T05 · 대화가 끊겨도 이어지는 프로젝트</h1>
+  <p class="lead">T03 카드 스튜디오의 사진 확대·축소 기능을 두 AI가 같은 조건에서 이어서 작업한 결과를 비교합니다.</p>
+
+  <section class="card">
+    <h2>작업 조건</h2>
+    <div class="grid">
+      <div class="mini"><strong>개선 기능</strong><br>사진 확대·축소 및 확대율 유지</div>
+      <div class="mini"><strong>공통 상한</strong><br>45분 · 요청/호출 12회</div>
+    </div>
+    <p class="note">고정 검사 Z01~Z10은 작업 전에 확정했고, AI A와 AI B에서 삭제·완화·기대값 변경 없이 동일하게 사용했습니다.</p>
+  </section>
+
+  <section class="card">
+    <h2>가린 비교표</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>실제 작업시간</th>
+          <th>요청/호출 수</th>
+          <th>오류 회차</th>
+          <th>고정 검사 통과</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AI A</td>
+          <td>4분 40초</td>
+          <td>1회</td>
+          <td>1회</td>
+          <td>8 / 10</td>
+        </tr>
+        <tr>
+          <td>AI B</td>
+          <td>17분</td>
+          <td>2회</td>
+          <td>0회</td>
+          <td>10 / 10</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">오류 회차는 고정 검사 10개를 한 세트로 실행한 회차 중 하나 이상의 FAIL이 나온 회차만 계산했습니다. 재작업량은 제출 뒤 고정 소스 버전 쌍으로 계산하므로 이 표에 수기로 적지 않습니다.</p>
+  </section>
+
+  <section class="card">
+    <h2>고정 소스 버전</h2>
+    <table>
+      <thead><tr><th>구분</th><th>시작</th><th>종료</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>AI A</td>
+          <td><code>23f4c6e274a8ed1851cbdf0e47623050659278ea</code></td>
+          <td><code>f12849e40e528a87cb7cea1b361087ac23bcef57</code></td>
+        </tr>
+        <tr>
+          <td>AI B</td>
+          <td><code>f12849e40e528a87cb7cea1b361087ac23bcef57</code></td>
+          <td><code>83a7ea986bc6ca3ec709047f02c03f5a5f333714</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>최종 검사 결과</h2>
+    <table>
+      <thead><tr><th>ID</th><th>검사</th><th>최종 결과</th></tr></thead>
+      <tbody>
+        <tr><td>Z01</td><td>확대 UI 노출</td><td class="pass">PASS</td></tr>
+        <tr><td>Z02</td><td>기본 확대율 100%</td><td class="pass">PASS</td></tr>
+        <tr><td>Z03</td><td>100% → 150% 확대 반영</td><td class="pass">PASS</td></tr>
+        <tr><td>Z04</td><td>150% → 50% 축소 반영</td><td class="pass">PASS</td></tr>
+        <tr><td>Z05</td><td>최소 50% 제한</td><td class="pass">PASS</td></tr>
+        <tr><td>Z06</td><td>최대 200% 제한</td><td class="pass">PASS</td></tr>
+        <tr><td>Z07</td><td>확대 후 사진 위치 이동</td><td class="pass">PASS</td></tr>
+        <tr><td>Z08</td><td>화면비 전환 후 확대율 유지</td><td class="pass">PASS</td></tr>
+        <tr><td>Z09</td><td>템플릿 저장/불러오기 후 확대율 유지</td><td class="pass">PASS</td></tr>
+        <tr><td>Z10</td><td>JSON 내보내기/가져오기 후 확대율 유지</td><td class="pass">PASS</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>작업 흐름</h2>
+    <ol>
+      <li>AI A 시작 — T03 기준 소스에서 확대·축소 기능 구현</li>
+      <li>AI A 종료·인수인계 — Z01~Z08 PASS, Z09~Z10 미완료</li>
+      <li>AI B 시작 — 작업 저장소와 인수인계 문서만 전달</li>
+      <li>AI B 종료 — 확대율의 템플릿/JSON 보존 로직을 이어서 완성</li>
+      <li>학생 직접 확인 — 브라우저에서 Z09와 Z10을 실제 조작으로 재검증</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>다음 작업의 도구 선택 기준</h2>
+    <p>빠른 구현보다 기존 코드 보존과 이어받기가 중요한 작업에서는, 인수인계 문서와 실제 소스를 먼저 대조해 작은 변경만 검증할 수 있는 도구를 우선 선택한다.</p>
+  </section>
+
+  <section class="card">
+    <h2>짧은 확인 방법</h2>
+    <p><strong>① 어디로 가나요</strong> — T05 카드 스튜디오 실행 페이지로 이동합니다.</p>
+    <p><strong>② 무엇을 하나요</strong> — 이미지를 올리고 150%로 확대 → 템플릿 저장·불러오기 → JSON 내보내기·가져오기를 실행합니다.</p>
+    <p><strong>③ 무엇이 보이면 통과인가요</strong> — 템플릿과 JSON에서 다시 불러온 뒤에도 확대율이 150%로 복원되면 통과입니다.</p>
+    <p><strong>④ 안 될 때 무엇이 보이나요</strong> — 확대율이 100%로 초기화되거나 저장한 값과 다르게 복원됩니다.</p>
+  </section>
+
+  <section class="card">
+    <h2>AI와 나의 판단</h2>
+    <p><strong>AI에게 맡긴 일</strong> — 사진 확대·축소 기능 구현과 확대율을 템플릿·JSON에 보존하는 수정안을 만들고 고정 검사 결과를 정리하게 했습니다.</p>
+    <p><strong>학생이 직접 판단한 일</strong> — AI가 만든 전체 파일이 원본 구조를 훼손한 경우 사용하지 않고, 실제 원본과 변경 지점을 대조한 뒤 브라우저에서 Z09·Z10을 직접 검증했습니다.</p>
+    <p><strong>AI 제안을 따르지 않은 일</strong> — 원본보다 크게 축약되어 기존 기능이 사라진 전체 app.js 교체 제안은 사용하지 않았고, 필요한 최소 변경만 반영했습니다.</p>
+  </section>
+</main>
+</body>
+</html>
