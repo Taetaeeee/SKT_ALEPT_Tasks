@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "t06-pds-diary-db",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "database_id": "c8275b52-3dfd-4e52-961b-1eed6400f1ca",
       "migrations_dir": "migrations"
     }
   ]
