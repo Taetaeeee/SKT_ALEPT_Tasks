@@ -1,0 +1,64 @@
+{
+  "contract": "pds-schema-v2",
+  "timezone": "Asia/Seoul",
+  "storage": {
+    "server_database": "Cloudflare D1",
+    "datetime_storage": "UTC ISO 8601",
+    "date_only_storage": "YYYY-MM-DD interpreted as Asia/Seoul calendar date",
+    "duration_unit": "minutes"
+  },
+  "tables": {
+    "plans": {
+      "purpose": "현재 계획",
+      "primary_key": "id",
+      "fields": ["id", "title", "start_date", "end_date", "priority", "success_criteria", "estimated_minutes", "carryover_text", "source_reflection_id", "created_at", "updated_at"]
+    },
+    "plan_revisions": {
+      "purpose": "계획 수정 전 스냅샷 보존",
+      "primary_key": "id",
+      "relation": "plan_revisions.plan_id -> plans.id",
+      "unique": ["plan_id", "revision_no"]
+    },
+    "tasks": {
+      "purpose": "계획에 딸린 할 일",
+      "primary_key": "id",
+      "relation": "tasks.plan_id -> plans.id",
+      "soft_delete": "deleted_at"
+    },
+    "execution_logs": {
+      "purpose": "계획값을 덮어쓰지 않는 실제 실행 기록",
+      "primary_key": "id",
+      "relation": "execution_logs.task_id -> tasks.id"
+    },
+    "completion_events": {
+      "purpose": "중복 완료 방지",
+      "primary_key": "id",
+      "relation": "completion_events.task_id -> tasks.id",
+      "unique": ["task_id"]
+    },
+    "reflections": {
+      "purpose": "SEE 돌아보기",
+      "primary_key": "id",
+      "relation": "reflections.plan_id -> plans.id",
+      "unique": ["plan_id"]
+    },
+    "carryovers": {
+      "purpose": "SEE의 개선점을 다음 PLAN으로 연결",
+      "primary_key": "id",
+      "relations": [
+        "carryovers.source_plan_id -> plans.id",
+        "carryovers.source_reflection_id -> reflections.id",
+        "carryovers.target_plan_id -> plans.id"
+      ]
+    }
+  },
+  "summary_rules": {
+    "plan_count": "tasks where deleted_at IS NULL",
+    "completed_count": "active tasks where status = completed",
+    "overdue_count": "active tasks where status != completed and due_date is before today in Asia/Seoul",
+    "blocked_count": "distinct active tasks having at least one execution_log with non-empty blocker_reason",
+    "estimated_minutes": "sum of estimated_minutes for active tasks; 0 when none",
+    "actual_minutes": "sum of actual_minutes for execution_logs attached to active tasks; 0 when none",
+    "difference_minutes": "actual_minutes - estimated_minutes"
+  }
+}
