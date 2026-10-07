@@ -301,6 +301,20 @@ function updateExecutionExpected() {
   setText($('#execution-expected'), `원래 계획값: 예상 ${task.estimated_minutes}분 · 현재 상태 ${task.status === 'completed' ? '완료' : '진행 중'} · 이 값은 실행 기록 저장 후에도 바뀌지 않습니다.`);
 }
 
+function resetExecutionInputs() {
+  $('#execution-start').value = '';
+  $('#execution-end').value = '';
+  $('#execution-blocker').value = '';
+  setText($('#execution-actual'), '확인 필요');
+  setText($('#execution-message'), '');
+  $('#execution-message').className = '';
+}
+
+function handleExecutionTaskChange() {
+  updateExecutionExpected();
+  resetExecutionInputs();
+}
+
 function localInputToIso(value) {
   if (!value) return null;
   const date = new Date(value);
@@ -431,12 +445,12 @@ $('#execution-form').addEventListener('submit', async (e) => {
       body: JSON.stringify({ started_at: startedAt, ended_at: endedAt, blocker_reason: $('#execution-blocker').value })
     });
     setText(msg, `실행 기록 저장 완료 · 예상 ${data.expected_minutes}분 / 실제 ${data.actual_minutes}분`); msg.className = 'ok';
-    $('#execution-blocker').value = '';
+    resetExecutionInputs();
     await reloadSelectedPlan();
   } catch (err) { setText(msg, err.message); msg.className = 'error'; }
 });
 
-$('#execution-task').addEventListener('change', updateExecutionExpected);
+$('#execution-task').addEventListener('change', handleExecutionTaskChange);
 $('#execution-start').addEventListener('input', updateActualMinutes);
 $('#execution-end').addEventListener('input', updateActualMinutes);
 
