@@ -68,6 +68,34 @@ function validateTask(input) {
   return { errors, value: { title, due_date: input.due_date, priority, tag, estimated_minutes: estimated } };
 }
 
+function validateExecution(input) {
+  const errors = [];
+  const startedAt = typeof input.started_at === 'string' ? input.started_at : '';
+  const endedAt = typeof input.ended_at === 'string' ? input.ended_at : '';
+  const startMs = Date.parse(startedAt);
+  const endMs = Date.parse(endedAt);
+  const blockerReason = typeof input.blocker_reason === 'string' ? input.blocker_reason.trim() : '';
+
+  if (!startedAt || !Number.isFinite(startMs)) errors.push('시작 시각이 올바르지 않습니다.');
+  if (!endedAt || !Number.isFinite(endMs)) errors.push('끝난 시각이 올바르지 않습니다.');
+  if (Number.isFinite(startMs) && Number.isFinite(endMs) && endMs < startMs) errors.push('끝난 시각은 시작 시각보다 빠를 수 없습니다.');
+  if (blockerReason.length > 1000) errors.push('막혔던 이유는 1000자 이하여야 합니다.');
+
+  const actualMinutes = Number.isFinite(startMs) && Number.isFinite(endMs)
+    ? Math.round((endMs - startMs) / 60000)
+    : 0;
+
+  return {
+    errors,
+    value: {
+      started_at: Number.isFinite(startMs) ? new Date(startMs).toISOString() : startedAt,
+      ended_at: Number.isFinite(endMs) ? new Date(endMs).toISOString() : endedAt,
+      actual_minutes: actualMinutes,
+      blocker_reason: blockerReason || null
+    }
+  };
+}
+
 async function readJson(request) {
   const type = request.headers.get('content-type') || '';
   if (!type.includes('application/json')) throw new Error('JSON_REQUIRED');
@@ -96,13 +124,23 @@ async function getPlan(env, id) {
     SELECT * FROM plan_revisions WHERE plan_id = ? ORDER BY revision_no DESC
   `).bind(id).all();
   const tasks = await env.DB.prepare(`
-    SELECT * FROM tasks WHERE plan_id = ? AND deleted_at IS NULL
-    ORDER BY due_date ASC,
-      CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END ASC,
-      created_at ASC,
-      id ASC
+    SELECT t.*,
+      (SELECT COUNT(*) FROM completion_events c WHERE c.task_id = t.id AND c.reverted_at IS NULL) AS active_completion_events
+    FROM tasks t
+    WHERE t.plan_id = ? AND t.deleted_at IS NULL
+    ORDER BY t.due_date ASC,
+      CASE t.priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END ASC,
+      t.created_at ASC,
+      t.id ASC
   `).bind(id).all();
-  return json({ ok: true, plan, revisions: revisions.results, tasks: tasks.results });
+  const executions = await env.DB.prepare(`
+    SELECT l.*, t.title AS task_title, t.estimated_minutes AS task_estimated_minutes
+    FROM execution_logs l
+    JOIN tasks t ON t.id = l.task_id
+    WHERE t.plan_id = ? AND t.deleted_at IS NULL
+    ORDER BY l.started_at DESC, l.id DESC
+  `).bind(id).all();
+  return json({ ok: true, plan, revisions: revisions.results, tasks: tasks.results, executions: executions.results });
 }
 
 async function createPlan(request, env) {
@@ -259,6 +297,33 @@ async function deleteTask(env, id) {
   return json({ ok: true, id });
 }
 
+async function createExecution(request, env, taskId) {
+  const task = await requireActiveTask(env, taskId);
+  if (!task) return notFound('실행 기록을 추가할 할 일을 찾을 수 없습니다.');
+
+  let input;
+  try { input = await readJson(request); }
+  catch { return badRequest('요청 본문은 application/json 형식이어야 합니다.'); }
+
+  const { errors, value } = validateExecution(input);
+  if (errors.length) return badRequest('실행 기록 입력값을 확인해 주세요.', errors);
+
+  const result = await env.DB.prepare(`
+    INSERT INTO execution_logs (task_id, started_at, ended_at, actual_minutes, blocker_reason)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(
+    taskId, value.started_at, value.ended_at, value.actual_minutes, value.blocker_reason
+  ).run();
+
+  return json({
+    ok: true,
+    id: result.meta.last_row_id,
+    task_id: taskId,
+    expected_minutes: Number(task.estimated_minutes || 0),
+    actual_minutes: value.actual_minutes
+  }, 201);
+}
+
 async function handleApi(request, env, url) {
   if (request.method === 'GET' && url.pathname === '/api/health') {
     const row = await env.DB.prepare('SELECT 1 AS db_ok').first();
@@ -278,6 +343,11 @@ async function handleApi(request, env, url) {
     const id = Number(planMatch[1]);
     if (request.method === 'GET') return getPlan(env, id);
     if (request.method === 'PUT') return updatePlan(request, env, id);
+  }
+
+  const executionMatch = url.pathname.match(/^\/api\/tasks\/(\d+)\/executions$/);
+  if (executionMatch && request.method === 'POST') {
+    return createExecution(request, env, Number(executionMatch[1]));
   }
 
   const taskActionMatch = url.pathname.match(/^\/api\/tasks\/(\d+)\/(complete|reopen)$/);

@@ -3,6 +3,7 @@ let selectedPlanId = null;
 let selectedPlan = null;
 let allTasks = [];
 let editingTaskId = null;
+let allExecutions = [];
 
 const priorityLabel = { high: '높음', medium: '중간', low: '낮음' };
 const priorityRank = { high: 1, medium: 2, low: 3 };
@@ -65,6 +66,11 @@ function resetPlanForm() {
   $('#task-controls').hidden = true;
   $('#sort-rule').hidden = true;
   $('#task-list').innerHTML = '<p class="meta">계획을 먼저 선택하세요.</p>';
+  allExecutions = [];
+  setText($('#do-plan-hint'), '저장된 계획을 선택하면 실행 기록을 남길 수 있습니다.');
+  $('#execution-form').hidden = true;
+  $('#execution-list').innerHTML = '<p class="meta">계획을 먼저 선택하세요.</p>';
+  setText($('#execution-message'), '');
 }
 
 async function loadPlans() {
@@ -93,10 +99,11 @@ async function loadPlans() {
 }
 
 async function selectPlan(id) {
-  const { plan, revisions, tasks } = await api(`/api/plans/${id}`, { headers: {} });
+  const { plan, revisions, tasks, executions } = await api(`/api/plans/${id}`, { headers: {} });
   selectedPlanId = id;
   selectedPlan = plan;
   allTasks = tasks || [];
+  allExecutions = executions || [];
   $('#plan-id').value = id;
   $('#title').value = plan.title;
   $('#start-date').value = plan.start_date;
@@ -126,6 +133,8 @@ async function selectPlan(id) {
   $('#sort-rule').hidden = false;
   refreshTagFilter();
   renderTasks();
+  setupExecutionForm();
+  renderExecutions();
 }
 
 function taskPayload() {
@@ -244,7 +253,8 @@ function renderTasks() {
     titleRow.append(title, badge);
 
     const meta = document.createElement('div'); meta.className = 'meta';
-    meta.textContent = `마감 ${task.due_date} · 우선순위 ${priorityLabel[task.priority]} · 태그 ${task.tag || '없음'} · 예상 ${task.estimated_minutes}분`;
+    const completionText = task.status === 'completed' ? ` · 활성 완료기록 ${Number(task.active_completion_events || 0)}건` : '';
+    meta.textContent = `마감 ${task.due_date} · 우선순위 ${priorityLabel[task.priority]} · 태그 ${task.tag || '없음'} · 예상 ${task.estimated_minutes}분${completionText}`;
     body.append(titleRow, meta);
 
     const actions = document.createElement('div');
@@ -258,6 +268,90 @@ function renderTasks() {
     actions.append(actionButton('삭제', 'danger', () => removeTask(task)));
     card.append(body, actions);
     root.append(card);
+  }
+}
+
+function setupExecutionForm() {
+  const form = $('#execution-form');
+  const select = $('#execution-task');
+  select.replaceChildren();
+  if (!selectedPlanId || !allTasks.length) {
+    form.hidden = true;
+    setText($('#do-plan-hint'), selectedPlanId ? '실행 기록을 남길 할 일이 없습니다.' : '저장된 계획을 선택하면 실행 기록을 남길 수 있습니다.');
+    return;
+  }
+
+  for (const task of allTasks) {
+    select.append(new Option(`${task.title} · 예상 ${task.estimated_minutes}분`, String(task.id)));
+  }
+  form.hidden = false;
+  setText($('#do-plan-hint'), `현재 계획: ${selectedPlan.title} · 실제 수행은 계획값과 별도로 저장됩니다.`);
+  updateExecutionExpected();
+  updateActualMinutes();
+}
+
+function selectedExecutionTask() {
+  const id = Number($('#execution-task').value);
+  return allTasks.find(task => Number(task.id) === id) || null;
+}
+
+function updateExecutionExpected() {
+  const task = selectedExecutionTask();
+  if (!task) return setText($('#execution-expected'), '할 일을 선택하세요.');
+  setText($('#execution-expected'), `원래 계획값: 예상 ${task.estimated_minutes}분 · 현재 상태 ${task.status === 'completed' ? '완료' : '진행 중'} · 이 값은 실행 기록 저장 후에도 바뀌지 않습니다.`);
+}
+
+function localInputToIso(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function calculatedActualMinutes() {
+  const start = $('#execution-start').value ? new Date($('#execution-start').value) : null;
+  const end = $('#execution-end').value ? new Date($('#execution-end').value) : null;
+  if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null;
+  return Math.round((end - start) / 60000);
+}
+
+function updateActualMinutes() {
+  const value = calculatedActualMinutes();
+  setText($('#execution-actual'), value === null ? '확인 필요' : `${value}분`);
+}
+
+function formatSeoulDateTime(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso || '-';
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).format(date);
+}
+
+function renderExecutions() {
+  const root = $('#execution-list');
+  root.replaceChildren();
+  if (!selectedPlanId) {
+    const p = document.createElement('p'); p.className = 'meta'; p.textContent = '계획을 먼저 선택하세요.'; root.append(p); return;
+  }
+  if (!allExecutions.length) {
+    const p = document.createElement('p'); p.className = 'meta'; p.textContent = '아직 실행 기록이 없습니다. 실제로 한 일을 기록해 보세요.'; root.append(p); return;
+  }
+
+  for (const log of allExecutions) {
+    const card = document.createElement('article'); card.className = 'execution-card';
+    const header = document.createElement('div'); header.className = 'execution-title-row';
+    const title = document.createElement('strong'); title.textContent = log.task_title;
+    const diff = Number(log.actual_minutes) - Number(log.task_estimated_minutes);
+    const badge = document.createElement('span'); badge.className = `diff-badge ${diff > 0 ? 'over' : diff < 0 ? 'under' : 'same'}`;
+    badge.textContent = diff === 0 ? '예상과 같음' : `${diff > 0 ? '+' : ''}${diff}분`;
+    header.append(title, badge);
+
+    const time = document.createElement('div'); time.className = 'meta';
+    time.textContent = `${formatSeoulDateTime(log.started_at)} → ${formatSeoulDateTime(log.ended_at)} · 예상 ${log.task_estimated_minutes}분 · 실제 ${log.actual_minutes}분`;
+    const blocker = document.createElement('div'); blocker.className = 'blocker-line';
+    const label = document.createElement('strong'); label.textContent = '막혔던 이유 '; blocker.append(label, document.createTextNode(log.blocker_reason || '없음'));
+    card.append(header, time, blocker); root.append(card);
   }
 }
 
@@ -321,6 +415,30 @@ $('#task-form').addEventListener('submit', async (e) => {
     closeTaskForm();
   } catch (err) { setText(msg, err.message); msg.className = 'error'; }
 });
+
+$('#execution-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const task = selectedExecutionTask();
+  const msg = $('#execution-message'); msg.className = ''; setText(msg, '저장 중…');
+  if (!task) { setText(msg, '할 일을 선택해 주세요.'); msg.className = 'error'; return; }
+  const startedAt = localInputToIso($('#execution-start').value);
+  const endedAt = localInputToIso($('#execution-end').value);
+  const actual = calculatedActualMinutes();
+  if (!startedAt || !endedAt || actual === null) { setText(msg, '시작·끝 시각을 확인해 주세요.'); msg.className = 'error'; return; }
+  try {
+    const data = await api(`/api/tasks/${task.id}/executions`, {
+      method: 'POST',
+      body: JSON.stringify({ started_at: startedAt, ended_at: endedAt, blocker_reason: $('#execution-blocker').value })
+    });
+    setText(msg, `실행 기록 저장 완료 · 예상 ${data.expected_minutes}분 / 실제 ${data.actual_minutes}분`); msg.className = 'ok';
+    $('#execution-blocker').value = '';
+    await reloadSelectedPlan();
+  } catch (err) { setText(msg, err.message); msg.className = 'error'; }
+});
+
+$('#execution-task').addEventListener('change', updateExecutionExpected);
+$('#execution-start').addEventListener('input', updateActualMinutes);
+$('#execution-end').addEventListener('input', updateActualMinutes);
 
 $('#refresh-btn').addEventListener('click', checkHealth);
 $('#new-plan-btn').addEventListener('click', resetPlanForm);

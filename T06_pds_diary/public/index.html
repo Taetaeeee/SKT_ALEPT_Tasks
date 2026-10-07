@@ -152,8 +152,37 @@
       </section>
     </section>
 
-    <section id="do" class="panel placeholder">
-      <p class="eyebrow">DO</p><h2>실행 기록</h2><p>다음 단계에서 시작 시각·종료 시각·실제 시간·막힌 이유를 연결합니다.</p>
+    <section id="do" class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">DO</p>
+          <h2>실제로 한 일 기록</h2>
+          <p id="do-plan-hint" class="meta">저장된 계획을 선택하면 실행 기록을 남길 수 있습니다.</p>
+        </div>
+      </div>
+
+      <form id="execution-form" class="execution-form" hidden>
+        <label>대상 할 일
+          <select id="execution-task" required></select>
+        </label>
+        <div id="execution-expected" class="expected-box">예상 시간을 확인할 할 일을 선택하세요.</div>
+        <div class="grid-2">
+          <label>시작 시각<input id="execution-start" type="datetime-local" required></label>
+          <label>끝난 시각<input id="execution-end" type="datetime-local" required></label>
+        </div>
+        <div class="actual-box">실제로 걸린 시간 <strong id="execution-actual">0분</strong><span> · 시작/끝 시각으로 자동 계산</span></div>
+        <label>막혔던 이유<textarea id="execution-blocker" rows="3" maxlength="1000" placeholder="막힘이 없었다면 비워 두세요."></textarea></label>
+        <div class="actions">
+          <button type="submit">실행 기록 저장</button>
+          <span id="execution-message" role="status"></span>
+        </div>
+      </form>
+
+      <div class="do-guide">
+        <strong>기록 원칙</strong>
+        <span>예상 시간은 할 일에 그대로 남기고, 실제 시간은 별도 실행 기록으로 저장합니다.</span>
+      </div>
+      <div id="execution-list" class="execution-list"><p class="meta">계획을 먼저 선택하세요.</p></div>
     </section>
     <section id="see" class="panel placeholder">
       <p class="eyebrow">SEE</p><h2>돌아보기</h2><p>다음 단계에서 집계와 근거 이동을 연결합니다.</p>

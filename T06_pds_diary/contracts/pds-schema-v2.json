@@ -11,33 +11,86 @@
     "plans": {
       "purpose": "현재 계획",
       "primary_key": "id",
-      "fields": ["id", "title", "start_date", "end_date", "priority", "success_criteria", "estimated_minutes", "carryover_text", "source_reflection_id", "created_at", "updated_at"]
+      "fields": [
+        "id",
+        "title",
+        "start_date",
+        "end_date",
+        "priority",
+        "success_criteria",
+        "estimated_minutes",
+        "carryover_text",
+        "source_reflection_id",
+        "created_at",
+        "updated_at"
+      ]
     },
     "plan_revisions": {
       "purpose": "계획 수정 전 스냅샷 보존",
       "primary_key": "id",
       "relation": "plan_revisions.plan_id -> plans.id",
-      "unique": ["plan_id", "revision_no"],
-      "fields": ["id", "plan_id", "revision_no", "title", "start_date", "end_date", "priority", "success_criteria", "estimated_minutes", "saved_at", "carryover_text"]
+      "unique": [
+        "plan_id",
+        "revision_no"
+      ],
+      "fields": [
+        "id",
+        "plan_id",
+        "revision_no",
+        "title",
+        "start_date",
+        "end_date",
+        "priority",
+        "success_criteria",
+        "estimated_minutes",
+        "saved_at",
+        "carryover_text"
+      ]
     },
     "tasks": {
       "purpose": "계획에 딸린 할 일",
       "primary_key": "id",
       "relation": "tasks.plan_id -> plans.id",
       "soft_delete": "deleted_at",
-      "status_values": ["in_progress", "completed"],
-      "fields": ["id", "plan_id", "title", "due_date", "priority", "tag", "estimated_minutes", "status", "created_at", "updated_at", "deleted_at"]
+      "status_values": [
+        "in_progress",
+        "completed"
+      ],
+      "fields": [
+        "id",
+        "plan_id",
+        "title",
+        "due_date",
+        "priority",
+        "tag",
+        "estimated_minutes",
+        "status",
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ]
     },
     "execution_logs": {
       "purpose": "계획값을 덮어쓰지 않는 실제 실행 기록",
       "primary_key": "id",
-      "relation": "execution_logs.task_id -> tasks.id"
+      "relation": "execution_logs.task_id -> tasks.id",
+      "fields": [
+        "id",
+        "task_id",
+        "started_at",
+        "ended_at",
+        "actual_minutes",
+        "blocker_reason",
+        "created_at"
+      ],
+      "actual_minutes_rule": "server computes rounded minute difference between ended_at and started_at; task estimated_minutes is never overwritten"
     },
     "completion_events": {
       "purpose": "활성 완료 이벤트 중복 방지와 완료 취소 이력",
       "primary_key": "id",
       "relation": "completion_events.task_id -> tasks.id",
-      "active_unique_rule": "task_id is unique only while reverted_at IS NULL"
+      "active_unique_rule": "task_id is unique only while reverted_at IS NULL",
+      "duplicate_rule": "partial unique index allows at most one active (reverted_at IS NULL) completion event per task; repeated complete requests remain one active record"
     },
     "reflections": {
       "purpose": "SEE 돌아보기",
