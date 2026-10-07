@@ -95,3 +95,8 @@ textarea { resize:vertical; }
 .carryover-ready { background:#eef8f2; border:1px solid #d6ecdf; border-radius:10px; padding:10px 12px; color:#16794b; font-size:12px; }
 @media (max-width:900px) { .summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:520px) { .summary-grid { grid-template-columns:1fr; } }
+
+.top-actions { display:flex; align-items:center; gap:16px; }
+.top-export { padding:8px 11px; border:1px solid #d9dde3; background:#fff; color:#20242b; font-size:12px; font-weight:800; }
+.top-export:hover,.top-export:focus-visible { border-color:#8c96a5; outline:none; background:#f7f8fa; }
+@media (max-width:720px) { .topbar { gap:10px; } .top-actions { gap:8px; } nav { gap:10px; } .top-export { padding:7px 9px; } }

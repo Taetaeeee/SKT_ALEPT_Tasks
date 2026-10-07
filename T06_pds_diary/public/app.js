@@ -28,6 +28,31 @@ async function api(path, options = {}) {
   return data;
 }
 
+async function exportAllData() {
+  const button = $('#export-btn');
+  const original = button.textContent;
+  button.disabled = true;
+  setText(button, '내보내는 중…');
+  try {
+    const data = await api('/api/export', { headers: {} });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const date = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+    link.href = url;
+    link.download = `pds-diary-export-${date}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    window.alert(`내보내기에 실패했습니다. ${error.message}`);
+  } finally {
+    button.disabled = false;
+    setText(button, original);
+  }
+}
+
 async function checkHealth() {
   const el = $('#db-status');
   setText(el, '확인 중…'); el.className = '';
@@ -593,6 +618,7 @@ $('#reflection-form').addEventListener('submit', async (e) => {
 
 $('#carryover-btn').addEventListener('click', prepareNextPlanFromReflection);
 
+$('#export-btn').addEventListener('click', exportAllData);
 $('#refresh-btn').addEventListener('click', checkHealth);
 $('#new-plan-btn').addEventListener('click', resetPlanForm);
 $('#new-task-btn').addEventListener('click', openNewTaskForm);

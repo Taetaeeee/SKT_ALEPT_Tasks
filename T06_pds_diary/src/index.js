@@ -428,10 +428,41 @@ async function saveReflection(request, env, planId) {
   return json({ ok: true, reflection });
 }
 
+async function exportAllData(env) {
+  const tableNames = [
+    'plans',
+    'plan_revisions',
+    'tasks',
+    'execution_logs',
+    'completion_events',
+    'reflections',
+    'carryovers'
+  ];
+
+  const data = {};
+  for (const table of tableNames) {
+    const result = await env.DB.prepare(`SELECT * FROM ${table} ORDER BY id ASC`).all();
+    data[table] = result.results || [];
+  }
+
+  return json({
+    ok: true,
+    export_format: 'pds-diary-export-v1',
+    exported_at: new Date().toISOString(),
+    timezone: 'Asia/Seoul',
+    duration_unit: 'minutes',
+    data
+  });
+}
+
 async function handleApi(request, env, url) {
   if (request.method === 'GET' && url.pathname === '/api/health') {
     const row = await env.DB.prepare('SELECT 1 AS db_ok').first();
     return json({ ok: true, db: row?.db_ok === 1 ? 'connected' : 'unknown' });
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/export') {
+    return exportAllData(env);
   }
 
   if (url.pathname === '/api/plans' && request.method === 'GET') return listPlans(env);

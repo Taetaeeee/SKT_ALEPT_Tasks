@@ -148,5 +148,25 @@
     "difference_minutes": "actual_minutes - estimated_minutes",
     "today_rule": "overdue comparison uses current calendar date in Asia/Seoul",
     "drilldown_rule": "plan/completed/overdue/blocked/expected/actual/difference metric buttons reveal the source tasks or execution logs"
+  },
+  "export_contract": {
+    "endpoint": "GET /api/export",
+    "format": "pds-diary-export-v1",
+    "file_type": "JSON",
+    "includes": [
+      "plans",
+      "plan_revisions",
+      "tasks",
+      "execution_logs",
+      "completion_events",
+      "reflections",
+      "carryovers"
+    ],
+    "history_rule": "soft-deleted tasks and reverted completion events are included so the exported file preserves the full stored history",
+    "metadata": [
+      "exported_at",
+      "timezone",
+      "duration_unit"
+    ]
   }
 }
