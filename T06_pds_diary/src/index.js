@@ -52,10 +52,30 @@ function validatePlan(input) {
   };
 }
 
+function validateTask(input) {
+  const errors = [];
+  const title = typeof input.title === 'string' ? input.title.trim() : '';
+  const tag = typeof input.tag === 'string' ? input.tag.trim() : '';
+  const estimated = Number(input.estimated_minutes);
+  const priority = input.priority;
+
+  if (!title || title.length > 200) errors.push('할 일 제목은 1~200자여야 합니다.');
+  if (!isDate(input.due_date)) errors.push('마감일은 YYYY-MM-DD 형식의 실제 날짜여야 합니다.');
+  if (!['low', 'medium', 'high'].includes(priority)) errors.push('우선순위는 low, medium, high 중 하나여야 합니다.');
+  if (tag.length > 50) errors.push('태그는 50자 이하여야 합니다.');
+  if (!Number.isInteger(estimated) || estimated < 0) errors.push('예상 시간은 0 이상의 정수(분)여야 합니다.');
+
+  return { errors, value: { title, due_date: input.due_date, priority, tag, estimated_minutes: estimated } };
+}
+
 async function readJson(request) {
   const type = request.headers.get('content-type') || '';
   if (!type.includes('application/json')) throw new Error('JSON_REQUIRED');
   return request.json();
+}
+
+async function requireActiveTask(env, id) {
+  return env.DB.prepare('SELECT * FROM tasks WHERE id = ? AND deleted_at IS NULL').bind(id).first();
 }
 
 async function listPlans(env) {
@@ -151,6 +171,94 @@ async function updatePlan(request, env, id) {
   return json({ ok: true, id, saved_revision: rev.next_no });
 }
 
+async function createTask(request, env, planId) {
+  const plan = await env.DB.prepare('SELECT id FROM plans WHERE id = ?').bind(planId).first();
+  if (!plan) return notFound('할 일을 추가할 계획을 찾을 수 없습니다.');
+
+  let input;
+  try { input = await readJson(request); }
+  catch { return badRequest('요청 본문은 application/json 형식이어야 합니다.'); }
+
+  const { errors, value } = validateTask(input);
+  if (errors.length) return badRequest('할 일 입력값을 확인해 주세요.', errors);
+
+  const result = await env.DB.prepare(`
+    INSERT INTO tasks (plan_id, title, due_date, priority, tag, estimated_minutes, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'in_progress')
+  `).bind(planId, value.title, value.due_date, value.priority, value.tag, value.estimated_minutes).run();
+
+  return json({ ok: true, id: result.meta.last_row_id }, 201);
+}
+
+async function updateTask(request, env, id) {
+  const task = await requireActiveTask(env, id);
+  if (!task) return notFound('수정할 할 일을 찾을 수 없습니다.');
+
+  let input;
+  try { input = await readJson(request); }
+  catch { return badRequest('요청 본문은 application/json 형식이어야 합니다.'); }
+
+  const { errors, value } = validateTask(input);
+  if (errors.length) return badRequest('할 일 입력값을 확인해 주세요.', errors);
+
+  await env.DB.prepare(`
+    UPDATE tasks SET title = ?, due_date = ?, priority = ?, tag = ?, estimated_minutes = ?,
+      updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = ? AND deleted_at IS NULL
+  `).bind(value.title, value.due_date, value.priority, value.tag, value.estimated_minutes, id).run();
+  return json({ ok: true, id });
+}
+
+async function completeTask(env, id) {
+  const task = await requireActiveTask(env, id);
+  if (!task) return notFound('완료할 할 일을 찾을 수 없습니다.');
+
+  const completeEvent = env.DB.prepare(`
+    INSERT OR IGNORE INTO completion_events (task_id, completed_at, reverted_at)
+    VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), NULL)
+  `).bind(id);
+  const updateTaskStatus = env.DB.prepare(`
+    UPDATE tasks SET status = 'completed', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = ? AND deleted_at IS NULL
+  `).bind(id);
+  await env.DB.batch([completeEvent, updateTaskStatus]);
+
+  const active = await env.DB.prepare(`
+    SELECT COUNT(*) AS count FROM completion_events WHERE task_id = ? AND reverted_at IS NULL
+  `).bind(id).first();
+  return json({ ok: true, id, active_completion_events: Number(active?.count || 0) });
+}
+
+async function reopenTask(env, id) {
+  const task = await requireActiveTask(env, id);
+  if (!task) return notFound('되돌릴 할 일을 찾을 수 없습니다.');
+
+  const revertEvent = env.DB.prepare(`
+    UPDATE completion_events
+    SET reverted_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE task_id = ? AND reverted_at IS NULL
+  `).bind(id);
+  const updateTaskStatus = env.DB.prepare(`
+    UPDATE tasks SET status = 'in_progress', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = ? AND deleted_at IS NULL
+  `).bind(id);
+  await env.DB.batch([revertEvent, updateTaskStatus]);
+  return json({ ok: true, id });
+}
+
+async function deleteTask(env, id) {
+  const task = await requireActiveTask(env, id);
+  if (!task) return notFound('지울 할 일을 찾을 수 없습니다.');
+
+  await env.DB.prepare(`
+    UPDATE tasks
+    SET deleted_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'),
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = ? AND deleted_at IS NULL
+  `).bind(id).run();
+  return json({ ok: true, id });
+}
+
 async function handleApi(request, env, url) {
   if (request.method === 'GET' && url.pathname === '/api/health') {
     const row = await env.DB.prepare('SELECT 1 AS db_ok').first();
@@ -160,11 +268,29 @@ async function handleApi(request, env, url) {
   if (url.pathname === '/api/plans' && request.method === 'GET') return listPlans(env);
   if (url.pathname === '/api/plans' && request.method === 'POST') return createPlan(request, env);
 
-  const match = url.pathname.match(/^\/api\/plans\/(\d+)$/);
-  if (match) {
-    const id = Number(match[1]);
+  const planTaskMatch = url.pathname.match(/^\/api\/plans\/(\d+)\/tasks$/);
+  if (planTaskMatch && request.method === 'POST') {
+    return createTask(request, env, Number(planTaskMatch[1]));
+  }
+
+  const planMatch = url.pathname.match(/^\/api\/plans\/(\d+)$/);
+  if (planMatch) {
+    const id = Number(planMatch[1]);
     if (request.method === 'GET') return getPlan(env, id);
     if (request.method === 'PUT') return updatePlan(request, env, id);
+  }
+
+  const taskActionMatch = url.pathname.match(/^\/api\/tasks\/(\d+)\/(complete|reopen)$/);
+  if (taskActionMatch && request.method === 'POST') {
+    const id = Number(taskActionMatch[1]);
+    return taskActionMatch[2] === 'complete' ? completeTask(env, id) : reopenTask(env, id);
+  }
+
+  const taskMatch = url.pathname.match(/^\/api\/tasks\/(\d+)$/);
+  if (taskMatch) {
+    const id = Number(taskMatch[1]);
+    if (request.method === 'PUT') return updateTask(request, env, id);
+    if (request.method === 'DELETE') return deleteTask(env, id);
   }
 
   return notFound('API 경로를 찾을 수 없습니다.');

@@ -2,8 +2,8 @@
   "contract": "pds-schema-v2",
   "timezone": "Asia/Seoul",
   "storage": {
-    "server_database": "Cloudflare D1",
-    "datetime_storage": "UTC ISO 8601",
+    "server_database": "Cloudflare D1 (SQLite)",
+    "datetime_storage": "UTC timestamp text; UI converts when a local display is needed",
     "date_only_storage": "YYYY-MM-DD interpreted as Asia/Seoul calendar date",
     "duration_unit": "minutes"
   },
@@ -17,13 +17,16 @@
       "purpose": "계획 수정 전 스냅샷 보존",
       "primary_key": "id",
       "relation": "plan_revisions.plan_id -> plans.id",
-      "unique": ["plan_id", "revision_no"]
+      "unique": ["plan_id", "revision_no"],
+      "fields": ["id", "plan_id", "revision_no", "title", "start_date", "end_date", "priority", "success_criteria", "estimated_minutes", "saved_at", "carryover_text"]
     },
     "tasks": {
       "purpose": "계획에 딸린 할 일",
       "primary_key": "id",
       "relation": "tasks.plan_id -> plans.id",
-      "soft_delete": "deleted_at"
+      "soft_delete": "deleted_at",
+      "status_values": ["in_progress", "completed"],
+      "fields": ["id", "plan_id", "title", "due_date", "priority", "tag", "estimated_minutes", "status", "created_at", "updated_at", "deleted_at"]
     },
     "execution_logs": {
       "purpose": "계획값을 덮어쓰지 않는 실제 실행 기록",
@@ -31,16 +34,15 @@
       "relation": "execution_logs.task_id -> tasks.id"
     },
     "completion_events": {
-      "purpose": "중복 완료 방지",
+      "purpose": "활성 완료 이벤트 중복 방지와 완료 취소 이력",
       "primary_key": "id",
       "relation": "completion_events.task_id -> tasks.id",
-      "unique": ["task_id"]
+      "active_unique_rule": "task_id is unique only while reverted_at IS NULL"
     },
     "reflections": {
       "purpose": "SEE 돌아보기",
       "primary_key": "id",
-      "relation": "reflections.plan_id -> plans.id",
-      "unique": ["plan_id"]
+      "relation": "reflections.plan_id -> plans.id"
     },
     "carryovers": {
       "purpose": "SEE의 개선점을 다음 PLAN으로 연결",
@@ -51,6 +53,12 @@
         "carryovers.target_plan_id -> plans.id"
       ]
     }
+  },
+  "task_sort_rules": {
+    "due": "due_date ASC, priority high->medium->low, created_at ASC, id ASC",
+    "priority": "priority high->medium->low, due_date ASC, id ASC",
+    "created": "created_at DESC, id DESC",
+    "title": "Korean locale title ASC, id ASC"
   },
   "summary_rules": {
     "plan_count": "tasks where deleted_at IS NULL",
