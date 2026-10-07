@@ -90,12 +90,27 @@
       "primary_key": "id",
       "relation": "completion_events.task_id -> tasks.id",
       "active_unique_rule": "task_id is unique only while reverted_at IS NULL",
-      "duplicate_rule": "partial unique index allows at most one active (reverted_at IS NULL) completion event per task; repeated complete requests remain one active record"
+      "duplicate_rule": "partial unique index allows at most one active (reverted_at IS NULL) completion event per task; repeated complete requests remain one active record",
+      "fields": [
+        "id",
+        "task_id",
+        "completed_at",
+        "reverted_at"
+      ]
     },
     "reflections": {
       "purpose": "SEE 돌아보기",
       "primary_key": "id",
-      "relation": "reflections.plan_id -> plans.id"
+      "relation": "reflections.plan_id -> plans.id",
+      "unique_rule": "앱은 plan_id별 최신 reflection 한 건을 조회하고 기존 행이 있으면 update, 없으면 insert",
+      "fields": [
+        "id",
+        "plan_id",
+        "insight",
+        "next_improvement",
+        "created_at",
+        "updated_at"
+      ]
     },
     "carryovers": {
       "purpose": "SEE의 개선점을 다음 PLAN으로 연결",
@@ -104,7 +119,17 @@
         "carryovers.source_plan_id -> plans.id",
         "carryovers.source_reflection_id -> reflections.id",
         "carryovers.target_plan_id -> plans.id"
-      ]
+      ],
+      "fields": [
+        "id",
+        "source_plan_id",
+        "source_reflection_id",
+        "target_plan_id",
+        "content",
+        "created_at",
+        "applied_at"
+      ],
+      "write_rule": "SEE에서 저장한 next_improvement를 다음 PLAN의 carryover_text/source_reflection_id로 넘기고 새 계획 저장 시 source/target 관계를 기록"
     }
   },
   "task_sort_rules": {
@@ -120,6 +145,8 @@
     "blocked_count": "distinct active tasks having at least one execution_log with non-empty blocker_reason",
     "estimated_minutes": "sum of estimated_minutes for active tasks; 0 when none",
     "actual_minutes": "sum of actual_minutes for execution_logs attached to active tasks; 0 when none",
-    "difference_minutes": "actual_minutes - estimated_minutes"
+    "difference_minutes": "actual_minutes - estimated_minutes",
+    "today_rule": "overdue comparison uses current calendar date in Asia/Seoul",
+    "drilldown_rule": "plan/completed/overdue/blocked/expected/actual/difference metric buttons reveal the source tasks or execution logs"
   }
 }

@@ -47,7 +47,12 @@ function validatePlan(input) {
       success_criteria: successCriteria,
       estimated_minutes: estimated,
       carryover_text: typeof input.carryover_text === 'string' ? input.carryover_text.trim() || null : null,
-      source_reflection_id: Number.isInteger(Number(input.source_reflection_id)) ? Number(input.source_reflection_id) : null
+      source_reflection_id:
+        input.source_reflection_id === null || input.source_reflection_id === undefined || input.source_reflection_id === ''
+          ? null
+          : (Number.isInteger(Number(input.source_reflection_id)) && Number(input.source_reflection_id) > 0
+              ? Number(input.source_reflection_id)
+              : null)
     }
   };
 }
@@ -96,6 +101,58 @@ function validateExecution(input) {
   };
 }
 
+
+function seoulToday() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date());
+  const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${map.year}-${map.month}-${map.day}`;
+}
+
+function validateReflection(input) {
+  const errors = [];
+  const insight = typeof input.insight === 'string' ? input.insight.trim() : '';
+  const nextImprovement = typeof input.next_improvement === 'string' ? input.next_improvement.trim() : '';
+  if (insight.length > 3000) errors.push('돌아보기 내용은 3000자 이하여야 합니다.');
+  if (!nextImprovement || nextImprovement.length > 1000) errors.push('다음 계획으로 넘길 고칠 점은 1~1000자여야 합니다.');
+  return { errors, value: { insight, next_improvement: nextImprovement } };
+}
+
+async function getPlanSummary(env, planId) {
+  const today = seoulToday();
+  const counts = await env.DB.prepare(`
+    SELECT COUNT(*) AS plan_count,
+      COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_count,
+      COALESCE(SUM(CASE WHEN status != 'completed' AND due_date < ? THEN 1 ELSE 0 END), 0) AS overdue_count,
+      COALESCE(SUM(estimated_minutes), 0) AS estimated_minutes
+    FROM tasks WHERE plan_id = ? AND deleted_at IS NULL
+  `).bind(today, planId).first();
+  const blocked = await env.DB.prepare(`
+    SELECT COUNT(*) AS blocked_count FROM tasks t
+    WHERE t.plan_id = ? AND t.deleted_at IS NULL
+      AND EXISTS (SELECT 1 FROM execution_logs l WHERE l.task_id = t.id
+        AND length(trim(COALESCE(l.blocker_reason, ''))) > 0)
+  `).bind(planId).first();
+  const actual = await env.DB.prepare(`
+    SELECT COALESCE(SUM(l.actual_minutes), 0) AS actual_minutes
+    FROM execution_logs l JOIN tasks t ON t.id = l.task_id
+    WHERE t.plan_id = ? AND t.deleted_at IS NULL
+  `).bind(planId).first();
+  const estimatedMinutes = Number(counts?.estimated_minutes || 0);
+  const actualMinutes = Number(actual?.actual_minutes || 0);
+  return {
+    today_seoul: today,
+    plan_count: Number(counts?.plan_count || 0),
+    completed_count: Number(counts?.completed_count || 0),
+    overdue_count: Number(counts?.overdue_count || 0),
+    blocked_count: Number(blocked?.blocked_count || 0),
+    estimated_minutes: estimatedMinutes,
+    actual_minutes: actualMinutes,
+    difference_minutes: actualMinutes - estimatedMinutes
+  };
+}
+
 async function readJson(request) {
   const type = request.headers.get('content-type') || '';
   if (!type.includes('application/json')) throw new Error('JSON_REQUIRED');
@@ -125,7 +182,12 @@ async function getPlan(env, id) {
   `).bind(id).all();
   const tasks = await env.DB.prepare(`
     SELECT t.*,
-      (SELECT COUNT(*) FROM completion_events c WHERE c.task_id = t.id AND c.reverted_at IS NULL) AS active_completion_events
+      (SELECT COUNT(*) FROM completion_events c WHERE c.task_id = t.id AND c.reverted_at IS NULL) AS active_completion_events,
+      (SELECT COALESCE(SUM(l.actual_minutes), 0) FROM execution_logs l WHERE l.task_id = t.id) AS actual_minutes,
+      CASE WHEN EXISTS (
+        SELECT 1 FROM execution_logs l
+        WHERE l.task_id = t.id AND length(trim(COALESCE(l.blocker_reason, ''))) > 0
+      ) THEN 1 ELSE 0 END AS has_blocker
     FROM tasks t
     WHERE t.plan_id = ? AND t.deleted_at IS NULL
     ORDER BY t.due_date ASC,
@@ -140,7 +202,11 @@ async function getPlan(env, id) {
     WHERE t.plan_id = ? AND t.deleted_at IS NULL
     ORDER BY l.started_at DESC, l.id DESC
   `).bind(id).all();
-  return json({ ok: true, plan, revisions: revisions.results, tasks: tasks.results, executions: executions.results });
+  const reflection = await env.DB.prepare(`
+    SELECT * FROM reflections WHERE plan_id = ? ORDER BY id DESC LIMIT 1
+  `).bind(id).first();
+  const summary = await getPlanSummary(env, id);
+  return json({ ok: true, plan, revisions: revisions.results, tasks: tasks.results, executions: executions.results, reflection: reflection || null, summary });
 }
 
 async function createPlan(request, env) {
@@ -162,7 +228,18 @@ async function createPlan(request, env) {
     value.source_reflection_id
   ).run();
 
-  return json({ ok: true, id: result.meta.last_row_id }, 201);
+  const newPlanId = Number(result.meta.last_row_id);
+  if (value.source_reflection_id && value.carryover_text) {
+    const source = await env.DB.prepare(`SELECT id, plan_id FROM reflections WHERE id = ?`).bind(value.source_reflection_id).first();
+    if (source) {
+      await env.DB.prepare(`
+        INSERT INTO carryovers (source_plan_id, source_reflection_id, target_plan_id, content)
+        VALUES (?, ?, ?, ?)
+      `).bind(source.plan_id, source.id, newPlanId, value.carryover_text).run();
+    }
+  }
+
+  return json({ ok: true, id: newPlanId }, 201);
 }
 
 async function updatePlan(request, env, id) {
@@ -324,6 +401,33 @@ async function createExecution(request, env, taskId) {
   }, 201);
 }
 
+
+async function saveReflection(request, env, planId) {
+  const plan = await env.DB.prepare('SELECT id FROM plans WHERE id = ?').bind(planId).first();
+  if (!plan) return notFound('돌아보기를 저장할 계획을 찾을 수 없습니다.');
+  let input;
+  try { input = await readJson(request); }
+  catch { return badRequest('요청 본문은 application/json 형식이어야 합니다.'); }
+  const { errors, value } = validateReflection(input);
+  if (errors.length) return badRequest('돌아보기 입력값을 확인해 주세요.', errors);
+  const current = await env.DB.prepare(`SELECT * FROM reflections WHERE plan_id = ? ORDER BY id DESC LIMIT 1`).bind(planId).first();
+  let reflectionId;
+  if (current) {
+    await env.DB.prepare(`
+      UPDATE reflections SET insight = ?, next_improvement = ?,
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?
+    `).bind(value.insight, value.next_improvement, current.id).run();
+    reflectionId = Number(current.id);
+  } else {
+    const result = await env.DB.prepare(`
+      INSERT INTO reflections (plan_id, insight, next_improvement) VALUES (?, ?, ?)
+    `).bind(planId, value.insight, value.next_improvement).run();
+    reflectionId = Number(result.meta.last_row_id);
+  }
+  const reflection = await env.DB.prepare('SELECT * FROM reflections WHERE id = ?').bind(reflectionId).first();
+  return json({ ok: true, reflection });
+}
+
 async function handleApi(request, env, url) {
   if (request.method === 'GET' && url.pathname === '/api/health') {
     const row = await env.DB.prepare('SELECT 1 AS db_ok').first();
@@ -336,6 +440,11 @@ async function handleApi(request, env, url) {
   const planTaskMatch = url.pathname.match(/^\/api\/plans\/(\d+)\/tasks$/);
   if (planTaskMatch && request.method === 'POST') {
     return createTask(request, env, Number(planTaskMatch[1]));
+  }
+
+  const reflectionMatch = url.pathname.match(/^\/api\/plans\/(\d+)\/reflection$/);
+  if (reflectionMatch && request.method === 'PUT') {
+    return saveReflection(request, env, Number(reflectionMatch[1]));
   }
 
   const planMatch = url.pathname.match(/^\/api\/plans\/(\d+)$/);

@@ -48,6 +48,7 @@
 
       <form id="plan-form" class="plan-form">
         <input type="hidden" id="plan-id">
+        <input type="hidden" id="source-reflection-id">
         <label>계획명<input id="title" required maxlength="120"></label>
         <div class="grid-2">
           <label>시작일<input id="start-date" type="date" required></label>
@@ -184,8 +185,61 @@
       </div>
       <div id="execution-list" class="execution-list"><p class="meta">계획을 먼저 선택하세요.</p></div>
     </section>
-    <section id="see" class="panel placeholder">
-      <p class="eyebrow">SEE</p><h2>돌아보기</h2><p>다음 단계에서 집계와 근거 이동을 연결합니다.</p>
+    <section id="see" class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">SEE</p>
+          <h2>돌아보기</h2>
+          <p id="see-plan-hint" class="meta">저장된 계획을 선택하면 집계와 근거 기록을 확인할 수 있습니다.</p>
+        </div>
+      </div>
+
+      <div id="see-summary" hidden>
+        <div class="summary-grid" aria-label="돌아보기 집계">
+          <button type="button" class="metric-card" data-evidence="all">
+            <span>계획 수</span><strong id="see-plan-count">0</strong><small>지우지 않은 할 일</small>
+          </button>
+          <button type="button" class="metric-card" data-evidence="completed">
+            <span>완료 수</span><strong id="see-completed-count">0</strong><small>현재 완료 상태</small>
+          </button>
+          <button type="button" class="metric-card" data-evidence="overdue">
+            <span>지연 수</span><strong id="see-overdue-count">0</strong><small id="see-overdue-note">서울 오늘 이전</small>
+          </button>
+          <button type="button" class="metric-card" data-evidence="blocked">
+            <span>막힘 수</span><strong id="see-blocked-count">0</strong><small>막힘 기록이 있는 할 일</small>
+          </button>
+          <button type="button" class="metric-card" data-evidence="expected">
+            <span>예상 시간</span><strong id="see-estimated">0분</strong><small>대상 할 일 합계</small>
+          </button>
+          <button type="button" class="metric-card" data-evidence="actual">
+            <span>실제 시간</span><strong id="see-actual">0분</strong><small>실행 기록 합계</small>
+          </button>
+          <button type="button" class="metric-card difference" data-evidence="difference">
+            <span>차이</span><strong id="see-difference">0분</strong><small>실제 − 예상</small>
+          </button>
+        </div>
+
+        <div class="evidence-box">
+          <div class="evidence-head">
+            <div><strong id="evidence-title">근거 기록</strong><p id="evidence-description" class="meta">위 숫자를 누르면 해당 집계의 근거가 표시됩니다.</p></div>
+          </div>
+          <div id="evidence-list" class="evidence-list"><p class="meta">집계 숫자를 선택하세요.</p></div>
+        </div>
+
+        <form id="reflection-form" class="reflection-form">
+          <label>이번 계획에서 알게 된 점
+            <textarea id="reflection-insight" rows="3" maxlength="3000" placeholder="예상과 실제가 왜 달랐는지 돌아봅니다."></textarea>
+          </label>
+          <label>다음 계획으로 넘길 고칠 점
+            <textarea id="reflection-next" rows="2" maxlength="1000" required placeholder="다음 계획에서 바꿀 점 한 가지를 적으세요."></textarea>
+          </label>
+          <div class="actions">
+            <button type="submit">돌아보기 저장</button>
+            <button type="button" id="carryover-btn" class="secondary" disabled>다음 PLAN으로 넘기기</button>
+            <span id="reflection-message" role="status"></span>
+          </div>
+        </form>
+      </div>
     </section>
   </main>
 </body>

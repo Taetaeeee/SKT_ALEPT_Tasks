@@ -4,6 +4,8 @@ let selectedPlan = null;
 let allTasks = [];
 let editingTaskId = null;
 let allExecutions = [];
+let currentSummary = null;
+let selectedReflection = null;
 
 const priorityLabel = { high: '높음', medium: '중간', low: '낮음' };
 const priorityRank = { high: 1, medium: 2, low: 3 };
@@ -46,7 +48,8 @@ function planPayload() {
     priority: $('#priority').value,
     success_criteria: $('#success-criteria').value,
     estimated_minutes: Number($('#estimated-minutes').value),
-    carryover_text: $('#carryover-text').value
+    carryover_text: $('#carryover-text').value,
+    source_reflection_id: $('#source-reflection-id').value || null
   };
 }
 
@@ -56,6 +59,7 @@ function resetPlanForm() {
   allTasks = [];
   $('#plan-form').reset();
   $('#plan-id').value = '';
+  $('#source-reflection-id').value = '';
   $('#priority').value = 'high';
   setText($('#save-plan-btn'), '계획 저장');
   setText($('#form-message'), '');
@@ -71,6 +75,7 @@ function resetPlanForm() {
   $('#execution-form').hidden = true;
   $('#execution-list').innerHTML = '<p class="meta">계획을 먼저 선택하세요.</p>';
   setText($('#execution-message'), '');
+  resetSee();
 }
 
 async function loadPlans() {
@@ -99,12 +104,15 @@ async function loadPlans() {
 }
 
 async function selectPlan(id) {
-  const { plan, revisions, tasks, executions } = await api(`/api/plans/${id}`, { headers: {} });
+  const { plan, revisions, tasks, executions, reflection, summary } = await api(`/api/plans/${id}`, { headers: {} });
   selectedPlanId = id;
   selectedPlan = plan;
   allTasks = tasks || [];
   allExecutions = executions || [];
+  selectedReflection = reflection || null;
+  currentSummary = summary || null;
   $('#plan-id').value = id;
+  $('#source-reflection-id').value = plan.source_reflection_id || '';
   $('#title').value = plan.title;
   $('#start-date').value = plan.start_date;
   $('#end-date').value = plan.end_date;
@@ -135,6 +143,7 @@ async function selectPlan(id) {
   renderTasks();
   setupExecutionForm();
   renderExecutions();
+  renderSee();
 }
 
 function taskPayload() {
@@ -369,6 +378,115 @@ function renderExecutions() {
   }
 }
 
+
+function resetSee() {
+  currentSummary = null;
+  selectedReflection = null;
+  setText($('#see-plan-hint'), '저장된 계획을 선택하면 집계와 근거 기록을 확인할 수 있습니다.');
+  $('#see-summary').hidden = true;
+  setText($('#evidence-title'), '근거 기록');
+  setText($('#evidence-description'), '위 숫자를 누르면 해당 집계의 근거가 표시됩니다.');
+  $('#evidence-list').innerHTML = '<p class="meta">집계 숫자를 선택하세요.</p>';
+  $('#reflection-form').reset();
+  $('#carryover-btn').disabled = true;
+  setText($('#reflection-message'), '');
+}
+
+function signedMinutes(value) {
+  const n = Number(value || 0);
+  return `${n > 0 ? '+' : ''}${n}분`;
+}
+
+function renderSee() {
+  if (!selectedPlanId || !currentSummary) return resetSee();
+  $('#see-summary').hidden = false;
+  setText($('#see-plan-hint'), `현재 계획: ${selectedPlan.title} · 집계 숫자를 누르면 근거 기록으로 이동합니다.`);
+  setText($('#see-plan-count'), currentSummary.plan_count);
+  setText($('#see-completed-count'), currentSummary.completed_count);
+  setText($('#see-overdue-count'), currentSummary.overdue_count);
+  setText($('#see-blocked-count'), currentSummary.blocked_count);
+  setText($('#see-estimated'), `${currentSummary.estimated_minutes}분`);
+  setText($('#see-actual'), `${currentSummary.actual_minutes}분`);
+  setText($('#see-difference'), signedMinutes(currentSummary.difference_minutes));
+  setText($('#see-overdue-note'), `${currentSummary.today_seoul} 이전 · 미완료`);
+
+  $('#reflection-insight').value = selectedReflection?.insight || '';
+  $('#reflection-next').value = selectedReflection?.next_improvement || '';
+  $('#carryover-btn').disabled = !selectedReflection?.id || !selectedReflection?.next_improvement;
+  renderEvidence('all');
+}
+
+function evidenceItem(title, meta, extra = '') {
+  const item = document.createElement('article');
+  item.className = 'evidence-item';
+  const strong = document.createElement('strong'); strong.textContent = title;
+  const detail = document.createElement('div'); detail.className = 'meta'; detail.textContent = meta;
+  item.append(strong, detail);
+  if (extra) {
+    const more = document.createElement('div'); more.className = 'blocker-evidence'; more.textContent = extra; item.append(more);
+  }
+  return item;
+}
+
+function renderEvidence(type) {
+  const root = $('#evidence-list');
+  root.replaceChildren();
+  const today = currentSummary?.today_seoul || '';
+  const configs = {
+    all: ['계획 수의 근거', '현재 계획에 딸린 지우지 않은 할 일 전체입니다.'],
+    completed: ['완료 수의 근거', '현재 완료 상태인 할 일만 표시합니다.'],
+    overdue: ['지연 수의 근거', `완료되지 않았고 마감일이 서울 시간 오늘(${today})보다 앞선 할 일입니다.`],
+    blocked: ['막힘 수의 근거', '실행 기록 중 막혔던 이유가 하나라도 있는 할 일을 한 번씩 셉니다.'],
+    expected: ['예상 시간의 근거', '지우지 않은 할 일의 예상 시간을 합산합니다.'],
+    actual: ['실제 시간의 근거', '지우지 않은 할 일에 연결된 실행 기록의 실제 시간을 합산합니다.'],
+    difference: ['시간 차이의 근거', '할 일별 실제 시간 합계에서 예상 시간을 뺀 값을 확인합니다.']
+  };
+  const [title, description] = configs[type] || configs.all;
+  setText($('#evidence-title'), title);
+  setText($('#evidence-description'), description);
+
+  if (type === 'actual') {
+    if (!allExecutions.length) root.append(evidenceItem('실행 기록 없음', '실제 시간 0분'));
+    for (const log of allExecutions) {
+      root.append(evidenceItem(log.task_title, `${formatSeoulDateTime(log.started_at)} → ${formatSeoulDateTime(log.ended_at)} · 실제 ${log.actual_minutes}분`, log.blocker_reason ? `막힘: ${log.blocker_reason}` : ''));
+    }
+    return;
+  }
+
+  let tasks = [...allTasks];
+  if (type === 'completed') tasks = tasks.filter(t => t.status === 'completed');
+  if (type === 'overdue') tasks = tasks.filter(t => t.status !== 'completed' && t.due_date < today);
+  if (type === 'blocked') tasks = tasks.filter(t => Number(t.has_blocker) === 1);
+
+  if (!tasks.length) {
+    root.append(evidenceItem('해당 기록 없음', type === 'overdue' ? '현재 지연 할 일이 0건입니다.' : '현재 조건에 해당하는 기록이 없습니다.'));
+    return;
+  }
+
+  for (const task of tasks) {
+    const actual = Number(task.actual_minutes || 0);
+    const expected = Number(task.estimated_minutes || 0);
+    let meta = `상태 ${task.status === 'completed' ? '완료' : '진행 중'} · 마감 ${task.due_date} · 예상 ${expected}분`;
+    if (['difference','all','blocked'].includes(type)) meta += ` · 실제 ${actual}분 · 차이 ${signedMinutes(actual - expected)}`;
+    const blockers = allExecutions.filter(log => Number(log.task_id) === Number(task.id) && (log.blocker_reason || '').trim()).map(log => log.blocker_reason.trim());
+    const extra = type === 'blocked' && blockers.length ? `막힘: ${blockers.join(' / ')}` : '';
+    root.append(evidenceItem(task.title, meta, extra));
+  }
+}
+
+function prepareNextPlanFromReflection() {
+  if (!selectedReflection?.id || !selectedReflection?.next_improvement) return;
+  const reflectionId = selectedReflection.id;
+  const improvement = selectedReflection.next_improvement;
+  resetPlanForm();
+  $('#source-reflection-id').value = reflectionId;
+  $('#carryover-text').value = improvement;
+  setText($('#form-message'), '이전 SEE의 개선점을 가져왔습니다. 다음 계획의 나머지 항목을 입력해 저장하세요.');
+  $('#form-message').className = 'ok';
+  document.querySelector('#plan').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('#title').focus();
+}
+
 async function reloadSelectedPlan() {
   if (!selectedPlanId) return;
   const id = selectedPlanId;
@@ -453,6 +571,27 @@ $('#execution-form').addEventListener('submit', async (e) => {
 $('#execution-task').addEventListener('change', handleExecutionTaskChange);
 $('#execution-start').addEventListener('input', updateActualMinutes);
 $('#execution-end').addEventListener('input', updateActualMinutes);
+
+for (const button of document.querySelectorAll('.metric-card[data-evidence]')) {
+  button.addEventListener('click', () => renderEvidence(button.dataset.evidence));
+}
+
+$('#reflection-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!selectedPlanId) return;
+  const msg = $('#reflection-message'); msg.className = ''; setText(msg, '저장 중…');
+  try {
+    const data = await api(`/api/plans/${selectedPlanId}/reflection`, {
+      method: 'PUT',
+      body: JSON.stringify({ insight: $('#reflection-insight').value, next_improvement: $('#reflection-next').value })
+    });
+    selectedReflection = data.reflection;
+    $('#carryover-btn').disabled = false;
+    setText(msg, '돌아보기 저장 완료 · 다음 PLAN으로 넘길 수 있습니다.'); msg.className = 'ok';
+  } catch (err) { setText(msg, err.message); msg.className = 'error'; }
+});
+
+$('#carryover-btn').addEventListener('click', prepareNextPlanFromReflection);
 
 $('#refresh-btn').addEventListener('click', checkHealth);
 $('#new-plan-btn').addEventListener('click', resetPlanForm);
