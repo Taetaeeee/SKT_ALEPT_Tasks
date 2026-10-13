@@ -18,14 +18,57 @@ const sortRuleLabel = {
 
 function setText(el, value) { el.textContent = value ?? ''; }
 
+let currentUser = null;
+let studyState = null;
+
+function showAuth(message = '') {
+  currentUser = null;
+  $('#auth-shell').hidden = false;
+  $('#app-shell').hidden = true;
+  if (message) {
+    const el = $('#login-message');
+    setText(el, message);
+    el.className = 'error';
+  }
+}
+
+function showApp(user, expiresAt) {
+  currentUser = user;
+  $('#auth-shell').hidden = true;
+  $('#app-shell').hidden = false;
+  const expiry = expiresAt ? new Date(expiresAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '';
+  setText($('#signed-user'), `${user.username}${expiry ? ` · 세션 ${expiry}까지` : ''}`);
+}
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     ...options,
+    credentials: 'same-origin',
     headers: { 'content-type': 'application/json', ...(options.headers || {}) }
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.details?.join(' / ') || data.message || '요청에 실패했습니다.');
+  if (!response.ok) {
+    if (response.status === 401 && !['/api/auth/login', '/api/auth/register'].includes(path)) {
+      showAuth('세션이 없거나 만료되었습니다. 다시 로그인해 주세요.');
+    }
+    const error = new Error(data.details?.join(' / ') || data.message || '요청에 실패했습니다.');
+    error.code = data.error;
+    error.status = response.status;
+    throw error;
+  }
   return data;
+}
+
+async function bootstrap() {
+  await checkHealth();
+  const response = await fetch('/api/auth/me', { credentials: 'same-origin' });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    showAuth();
+    return;
+  }
+  showApp(data.user, data.session_expires_at);
+  await Promise.all([loadPlans(), loadUsageStudy()]);
 }
 
 async function exportAllData() {
@@ -539,6 +582,205 @@ async function removeTask(task) {
   }
 }
 
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+  const msg = $('#login-message');
+  msg.className = '';
+  setText(msg, '확인 중…');
+  try {
+    const data = await api('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: $('#login-username').value, password: $('#login-password').value })
+    });
+    $('#login-form').reset();
+    showApp(data.user, data.session_expires_at);
+    setText(msg, '');
+    await Promise.all([loadPlans(), loadUsageStudy()]);
+  } catch (error) {
+    setText(msg, error.message);
+    msg.className = 'error';
+  }
+}
+
+async function handleRegisterSubmit(e) {
+  e.preventDefault();
+  const msg = $('#register-message');
+  msg.className = '';
+  const password = $('#register-password').value;
+  if (password !== $('#register-password-confirm').value) {
+    setText(msg, '비밀번호 확인이 일치하지 않습니다.');
+    msg.className = 'error';
+    return;
+  }
+  setText(msg, '계정 만드는 중…');
+  try {
+    const data = await api('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username: $('#register-username').value, password })
+    });
+    $('#register-form').reset();
+    showApp(data.user, data.session_expires_at);
+    if (data.claimed_legacy_plans > 0) {
+      window.alert(`T06에서 저장된 계획 ${data.claimed_legacy_plans}건을 첫 계정 자료로 연결했습니다.`);
+    }
+    await Promise.all([loadPlans(), loadUsageStudy()]);
+  } catch (error) {
+    setText(msg, error.message);
+    msg.className = 'error';
+  }
+}
+
+async function logoutNow() {
+  try { await api('/api/auth/logout', { method: 'POST', body: '{}' }); }
+  catch { /* 세션이 이미 만료된 경우에도 로그인 화면으로 이동 */ }
+  selectedPlanId = null;
+  studyState = null;
+  showAuth('로그아웃되었습니다.');
+}
+
+function renderUsageStudy(data) {
+  studyState = data;
+  const config = data.config;
+  const records = data.records || [];
+  const change = data.rule_change;
+  const summary = data.summary || {};
+  setText($('#study-progress'), `${records.length} / 5일`);
+  setText($('#study-sum'), config ? `${summary.sum} ${config.metric_unit}` : '0');
+  setText($('#study-average'), config ? `${summary.average} ${config.metric_unit}` : '0');
+  setText($('#study-change-state'), change ? '1회 완료' : '아직 없음');
+
+  const setup = $('#study-setup-form');
+  if (config) {
+    $('#study-question').value = config.question;
+    $('#study-metric-name').value = config.metric_name;
+    $('#study-metric-unit').value = config.metric_unit;
+    $('#study-plan-rule').value = config.plan_rule;
+    $('#study-rounding-digits').value = String(config.rounding_digits);
+    $('#study-week-start').value = config.week_start_day;
+    setText($('#study-calculation-rule'), config.calculation_rule);
+  }
+  const locked = records.length > 0;
+  for (const el of setup.querySelectorAll('input, textarea, select, button')) el.disabled = locked;
+  setText($('#study-setup-message'), locked ? '첫 기록이 저장되어 1일차 기준이 고정되었습니다.' : (config ? '첫 기록 전까지 기준을 수정할 수 있습니다.' : ''));
+
+  const todayForm = $('#study-today-form');
+  const today = summary.next_record_date;
+  const hasToday = records.some(r => r.record_date === today);
+  const needsChange = Boolean(summary.rule_change_required_before_next_record);
+  todayForm.hidden = !config || records.length >= 5 || needsChange;
+  const todayButton = todayForm.querySelector('button[type="submit"]');
+  if (todayButton) todayButton.disabled = hasToday;
+  setText($('#study-today-message'), hasToday ? `${today} 기록이 이미 있어 오늘은 한 건만 유지합니다.` : '');
+
+  const ruleForm = $('#study-rule-form');
+  ruleForm.hidden = !config || !needsChange;
+  if (!ruleForm.hidden && config) $('#study-new-rule').value = config.plan_rule;
+
+  const root = $('#study-records');
+  root.replaceChildren();
+  if (!records.length) {
+    const p = document.createElement('p'); p.className = 'meta'; p.textContent = '아직 실제 날짜 기록이 없습니다.'; root.append(p);
+  } else {
+    for (const [index, record] of records.entries()) {
+      const item = document.createElement('div'); item.className = 'plan-item';
+      const title = document.createElement('strong'); title.textContent = `${index + 1}일차 · ${record.record_date}`;
+      const meta = document.createElement('div'); meta.className = 'meta';
+      meta.textContent = `${config.metric_name}: ${record.metric_value} ${config.metric_unit}${record.note ? ` · ${record.note}` : ''}`;
+      item.append(title, meta); root.append(item);
+    }
+  }
+  if (change) {
+    const item = document.createElement('div'); item.className = 'revision-item';
+    const title = document.createElement('strong'); title.textContent = '계획 규칙 변경 · 2일차 뒤 / 3일차 앞';
+    const meta = document.createElement('div'); meta.className = 'meta';
+    meta.textContent = `${change.previous_rule} → ${change.new_rule} · 이유: ${change.reason} · 시각 ${change.changed_at}`;
+    item.append(title, meta); root.append(item);
+  }
+}
+
+async function loadUsageStudy() {
+  try { renderUsageStudy(await api('/api/usage-study', { headers: {} })); }
+  catch (error) { if (currentUser) setText($('#study-setup-message'), error.message); }
+}
+
+async function saveStudySetup(e) {
+  e.preventDefault();
+  const msg = $('#study-setup-message'); msg.className = ''; setText(msg, '저장 중…');
+  try {
+    await api('/api/usage-study/setup', {
+      method: 'PUT',
+      body: JSON.stringify({
+        question: $('#study-question').value,
+        metric_name: $('#study-metric-name').value,
+        metric_unit: $('#study-metric-unit').value,
+        plan_rule: $('#study-plan-rule').value,
+        rounding_digits: Number($('#study-rounding-digits').value),
+        week_start_day: $('#study-week-start').value
+      })
+    });
+    setText(msg, '1일차 기준을 저장했습니다.'); msg.className = 'ok';
+    await loadUsageStudy();
+  } catch (error) { setText(msg, error.message); msg.className = 'error'; }
+}
+
+async function saveTodayStudy(e) {
+  e.preventDefault();
+  const msg = $('#study-today-message'); msg.className = ''; setText(msg, '저장 중…');
+  try {
+    await api('/api/usage-study/today', {
+      method: 'POST',
+      body: JSON.stringify({ metric_value: Number($('#study-value').value), note: $('#study-note').value })
+    });
+    $('#study-value').value = '';
+    $('#study-note').value = '';
+    setText(msg, '오늘 기록을 저장했습니다.'); msg.className = 'ok';
+    await loadUsageStudy();
+  } catch (error) { setText(msg, error.message); msg.className = 'error'; }
+}
+
+async function saveStudyRuleChange(e) {
+  e.preventDefault();
+  const msg = $('#study-rule-message'); msg.className = ''; setText(msg, '저장 중…');
+  try {
+    await api('/api/usage-study/rule-change', {
+      method: 'POST',
+      body: JSON.stringify({ new_rule: $('#study-new-rule').value, reason: $('#study-rule-reason').value })
+    });
+    setText(msg, '규칙 변경 시각과 1·2일차 참조를 저장했습니다.'); msg.className = 'ok';
+    await loadUsageStudy();
+  } catch (error) { setText(msg, error.message); msg.className = 'error'; }
+}
+
+async function changePasswordSubmit(e) {
+  e.preventDefault();
+  const msg = $('#password-message'); msg.className = ''; setText(msg, '변경 중…');
+  try {
+    const data = await api('/api/auth/password', {
+      method: 'PUT',
+      body: JSON.stringify({ current_password: $('#current-password').value, new_password: $('#new-password').value })
+    });
+    $('#password-form').reset();
+    setText(msg, '변경 완료 · 이전 세션은 모두 폐기되고 현재 세션이 새로 발급되었습니다.'); msg.className = 'ok';
+    showApp(currentUser, data.session_expires_at);
+  } catch (error) { setText(msg, error.message); msg.className = 'error'; }
+}
+
+async function deleteAccountSubmit(e) {
+  e.preventDefault();
+  const msg = $('#delete-message'); msg.className = '';
+  if ($('#delete-confirm').value !== 'DELETE') {
+    setText(msg, 'DELETE를 정확히 입력해 주세요.'); msg.className = 'error'; return;
+  }
+  if (!window.confirm('계정과 이 계정의 모든 자료를 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+  setText(msg, '삭제 중…');
+  try {
+    await api('/api/auth/account', { method: 'DELETE', body: JSON.stringify({ confirm: 'DELETE' }) });
+    $('#delete-account-form').reset();
+    showAuth('계정과 연결된 자료를 삭제했습니다.');
+  } catch (error) { setText(msg, error.message); msg.className = 'error'; }
+}
+
 $('#plan-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = $('#form-message'); msg.className = ''; setText(msg, '저장 중…');
@@ -618,6 +860,15 @@ $('#reflection-form').addEventListener('submit', async (e) => {
 
 $('#carryover-btn').addEventListener('click', prepareNextPlanFromReflection);
 
+$('#login-form').addEventListener('submit', handleLoginSubmit);
+$('#register-form').addEventListener('submit', handleRegisterSubmit);
+$('#logout-btn').addEventListener('click', logoutNow);
+$('#study-setup-form').addEventListener('submit', saveStudySetup);
+$('#study-today-form').addEventListener('submit', saveTodayStudy);
+$('#study-rule-form').addEventListener('submit', saveStudyRuleChange);
+$('#password-form').addEventListener('submit', changePasswordSubmit);
+$('#delete-account-form').addEventListener('submit', deleteAccountSubmit);
+
 $('#export-btn').addEventListener('click', exportAllData);
 $('#refresh-btn').addEventListener('click', checkHealth);
 $('#new-plan-btn').addEventListener('click', resetPlanForm);
@@ -627,5 +878,4 @@ for (const id of ['task-search','task-status-filter','task-priority-filter','tas
   $(id.startsWith('#') ? id : `#${id}`).addEventListener(id === 'task-search' ? 'input' : 'change', renderTasks);
 }
 
-checkHealth();
-loadPlans();
+bootstrap();

@@ -3,33 +3,65 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PDS Diary — T06</title>
+  <title>PDS Diary 2 — T07 인증</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
+
+  <main id="auth-shell" class="auth-shell">
+    <section class="auth-card">
+      <p class="eyebrow">T07 · PRIVATE PDS DIARY</p>
+      <h1>로그인해야 내 기록을 볼 수 있습니다.</h1>
+      <p class="auth-lead">심사자는 이 로그인 화면까지 계정 없이 열 수 있지만, 계획·할 일·실행 기록은 로그인 뒤에만 표시됩니다.</p>
+      <form id="login-form" class="auth-form">
+        <h2>로그인</h2>
+        <label>아이디<input id="login-username" autocomplete="username" required maxlength="40"></label>
+        <label>비밀번호<input id="login-password" type="password" autocomplete="current-password" required maxlength="128"></label>
+        <button type="submit">로그인</button>
+        <p id="login-message" role="status"></p>
+      </form>
+      <details class="signup-box">
+        <summary>처음이라면 새 계정 만들기</summary>
+        <form id="register-form" class="auth-form">
+          <label>아이디<input id="register-username" autocomplete="username" required minlength="4" maxlength="40" pattern="[a-z0-9._-]+"></label>
+          <label>비밀번호<input id="register-password" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></label>
+          <label>비밀번호 확인<input id="register-password-confirm" type="password" autocomplete="new-password" required minlength="8" maxlength="128"></label>
+          <button type="submit">가입하고 시작</button>
+          <p id="register-message" role="status"></p>
+        </form>
+      </details>
+      <p class="security-note">비밀번호는 평문으로 저장하지 않습니다. 로그인 실패 시 존재하지 않는 아이디와 틀린 비밀번호에 같은 안내를 표시합니다.</p>
+    </section>
+  </main>
+  <div id="app-shell" hidden>
+
   <header class="topbar">
-    <div class="brand">PDS Diary</div>
+    <div class="brand">PDS Diary 2 <span class="private-badge">PRIVATE</span></div>
     <div class="top-actions">
       <nav aria-label="주요 메뉴">
         <a href="#plan">PLAN</a>
         <a href="#do">DO</a>
         <a href="#see">SEE</a>
+        <a href="#study">5일 기록</a>
+        <a href="#account">계정</a>
       </nav>
+      <span id="signed-user" class="signed-user"></span>
       <button id="export-btn" type="button" class="top-export">내 자료 내보내기</button>
+      <button id="logout-btn" type="button" class="secondary">로그아웃</button>
     </div>
   </header>
 
   <main class="shell">
-    <section class="notice" aria-label="공개 범위 안내">
-      <strong>공개 안내</strong>
-      <span>지금은 로그인이 없어 링크를 아는 사람은 누구나 볼 수 있습니다. 남이 봐도 괜찮은 내용만 넣으세요.</span>
+    <section class="notice private-notice" aria-label="비공개 안내">
+      <strong>내 계정 전용</strong>
+      <span>이 화면의 계획·할 일·실행 기록은 로그인한 계정의 자료만 서버에서 조회합니다.</span>
     </section>
 
     <section class="hero">
       <p class="eyebrow">PLAN → DO → SEE → NEXT PLAN</p>
       <h1>내 계획과 실제의 차이를 기록합니다.</h1>
-      <p>계획과 할 일을 서버 데이터베이스에 저장하고, 실제 수행과 돌아보기로 이어갑니다.</p>
+      <p>가입·로그인으로 잠근 뒤, 계획과 실제 수행을 내 계정 안에서만 기록합니다.</p>
     </section>
 
     <section class="status-card" aria-live="polite">
@@ -244,6 +276,88 @@
         </form>
       </div>
     </section>
+
+
+    <section id="study" class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">T07 · 5-DAY USE</p>
+          <h2>잠긴 앱 5일 사용 기록</h2>
+          <p class="meta">1일차 기준을 고정하고, 서로 다른 실제 KST 날짜에 하루 한 건만 기록합니다. 2일차 뒤·3일차 앞에는 계획 규칙을 정확히 한 번 바꿉니다.</p>
+        </div>
+        <strong id="study-progress" class="progress-pill">0 / 5일</strong>
+      </div>
+
+      <form id="study-setup-form" class="study-form">
+        <h3>1일차에 고정할 기준</h3>
+        <label>답하려는 질문<input id="study-question" maxlength="300" required placeholder="예: 계획 규칙을 바꾸면 하루 실제 집중 시간이 늘어나는가?"></label>
+        <div class="grid-2">
+          <label>관찰 지표<input id="study-metric-name" maxlength="100" required placeholder="예: 실제 집중 시간"></label>
+          <label>단위<input id="study-metric-unit" maxlength="30" required placeholder="예: 분"></label>
+        </div>
+        <label>계획 규칙<textarea id="study-plan-rule" rows="2" maxlength="500" required placeholder="예: 업무 시작 전에 오늘 할 일 3개만 먼저 정한다."></textarea></label>
+        <div class="grid-2">
+          <label>평균 반올림
+            <select id="study-rounding-digits"><option value="0">정수</option><option value="1" selected>소수 1자리</option><option value="2">소수 2자리</option></select>
+          </label>
+          <label>주 시작 요일
+            <select id="study-week-start"><option value="monday" selected>월요일</option><option value="sunday">일요일</option></select>
+          </label>
+        </div>
+        <div class="rule-box">
+          <p><strong>계산 규칙</strong> <span id="study-calculation-rule">각 날짜 입력값 합계와 기록 수 기준 평균</span></p>
+          <p><strong>빠진 값</strong> 기록이 없으면 0으로 채우지 않고 미완성으로 둡니다.</p>
+          <p><strong>중복 값</strong> 같은 KST 날짜의 두 번째 저장은 거절합니다.</p>
+          <p><strong>튀는 값</strong> 임의 제외하지 않고 실제 값과 메모를 보존합니다.</p>
+        </div>
+        <div class="actions"><button type="submit" id="study-setup-btn">1일차 기준 고정</button><span id="study-setup-message" role="status"></span></div>
+      </form>
+
+      <form id="study-today-form" class="study-form" hidden>
+        <h3>오늘 기록</h3>
+        <p class="meta">날짜는 서버가 Asia/Seoul 기준 오늘 날짜로 저장하며 임의 날짜 입력은 받지 않습니다.</p>
+        <div class="grid-2">
+          <label>오늘 지표 값<input id="study-value" type="number" step="any" required></label>
+          <label>메모<input id="study-note" maxlength="1000" placeholder="막힌 점·특이사항"></label>
+        </div>
+        <div class="actions"><button type="submit">오늘 기록 저장</button><span id="study-today-message" role="status"></span></div>
+      </form>
+
+      <form id="study-rule-form" class="study-form warning-box" hidden>
+        <h3>2일차 뒤 · 3일차 앞 계획 규칙 변경</h3>
+        <label>새 계획 규칙<textarea id="study-new-rule" rows="2" maxlength="500" required></textarea></label>
+        <label>바꾸는 이유<textarea id="study-rule-reason" rows="2" maxlength="1000" required></textarea></label>
+        <div class="actions"><button type="submit">규칙 변경 기록</button><span id="study-rule-message" role="status"></span></div>
+      </form>
+
+      <div class="study-summary">
+        <div><span>합계</span><strong id="study-sum">0</strong></div>
+        <div><span>평균</span><strong id="study-average">0</strong></div>
+        <div><span>규칙 변경</span><strong id="study-change-state">아직 없음</strong></div>
+      </div>
+      <div id="study-records" class="list"><p class="meta">기준을 저장하면 실제 날짜 기록이 표시됩니다.</p></div>
+    </section>
+
+    <section id="account" class="panel">
+      <div class="section-head"><div><p class="eyebrow">ACCOUNT</p><h2>계정과 세션</h2></div></div>
+      <p class="meta">세션은 12시간 뒤 만료됩니다. 로그아웃 또는 비밀번호 변경 시 이전 세션은 서버에서 폐기됩니다.</p>
+      <div class="split">
+        <form id="password-form" class="study-form">
+          <h3>비밀번호 변경</h3>
+          <label>현재 비밀번호<input id="current-password" type="password" autocomplete="current-password" required></label>
+          <label>새 비밀번호<input id="new-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
+          <div class="actions"><button type="submit">비밀번호 변경</button><span id="password-message" role="status"></span></div>
+        </form>
+        <form id="delete-account-form" class="study-form danger-zone">
+          <h3>계정 삭제</h3>
+          <p>계정을 지우면 이 계정의 계획·할 일·실행 기록·5일 기록도 함께 삭제됩니다.</p>
+          <label>확인을 위해 DELETE 입력<input id="delete-confirm" required></label>
+          <div class="actions"><button type="submit" class="danger">내 계정과 자료 삭제</button><span id="delete-message" role="status"></span></div>
+        </form>
+      </div>
+    </section>
   </main>
+
+  </div>
 </body>
 </html>

@@ -1,0 +1,69 @@
+{
+  "contract": "pds-schema-v3-auth",
+  "based_on": "pds-schema-v2",
+  "timezone": "Asia/Seoul",
+  "duration_unit": "minutes",
+  "authentication": {
+    "mode": "direct implementation using the Web Crypto API",
+    "password_kdf": "PBKDF2-HMAC-SHA-256",
+    "iterations": 600000,
+    "salt_bytes": 16,
+    "stored_password_format": "pbkdf2-sha256$iterations$salt$derivedKey",
+    "session_type": "opaque random session",
+    "session_random_bytes": 32,
+    "session_db_storage": "SHA-256 hash of the opaque session token",
+    "session_ttl_seconds": 43200,
+    "cookie": "HttpOnly; SameSite=Strict; Secure on HTTPS; Path=/"
+  },
+  "ownership": {
+    "root_owner_column": "plans.user_id",
+    "rule": "plans are selected by authenticated user_id; tasks, logs, revisions, reflections and carryovers inherit ownership through plan relations",
+    "foreign_resource_response": "404 NOT_FOUND to hide whether another user's resource exists",
+    "client_user_id_trust": "none; query/header/body user identifiers never choose the owner"
+  },
+  "new_tables": {
+    "users": {
+      "fields": ["id", "username", "password_hash", "auth_version", "created_at", "updated_at"],
+      "unique": ["username"]
+    },
+    "sessions": {
+      "fields": ["id", "user_id", "token_hash", "expires_at", "created_at"],
+      "relation": "sessions.user_id -> users.id",
+      "unique": ["token_hash"]
+    },
+    "usage_study_config": {
+      "purpose": "T07 day-1 fixed question, metric, unit, calculation and data handling rules",
+      "fields": ["id", "user_id", "question", "metric_name", "metric_unit", "calculation_rule", "plan_rule", "missing_rule", "duplicate_rule", "outlier_rule", "rounding_digits", "week_start_day", "created_at", "updated_at"],
+      "unique": ["user_id"]
+    },
+    "usage_daily_records": {
+      "purpose": "exactly one record per actual Asia/Seoul date, maximum five",
+      "fields": ["id", "user_id", "record_date", "metric_value", "note", "created_at"],
+      "unique": ["user_id", "record_date"]
+    },
+    "plan_rule_changes": {
+      "purpose": "one rule change after day 2 and before day 3",
+      "fields": ["id", "user_id", "changed_at", "previous_rule", "new_rule", "reason", "day1_record_id", "day2_record_id"],
+      "unique": ["user_id"]
+    }
+  },
+  "five_day_rules": {
+    "date_source": "server-computed current date in Asia/Seoul; client cannot choose the date",
+    "maximum_unique_dates": 5,
+    "day3_gate": "when exactly two records exist and no plan_rule_changes row exists, the next daily record is rejected",
+    "duplicate": "second record for the same Asia/Seoul date is rejected and the existing record remains",
+    "missing": "missing dates are not filled with zero; the study remains incomplete",
+    "outlier": "values are not automatically removed",
+    "summary": "sum of all stored metric values; average = sum / record count; rounded using rounding_digits"
+  },
+  "legacy_migration": {
+    "rule": "when the first account is registered, all existing T06 plans whose user_id is NULL are assigned to that first account",
+    "reason": "preserve the final T06 diary data while adding T07 authentication"
+  },
+  "export": {
+    "endpoint": "GET /api/export",
+    "format": "pds-diary-export-v2-auth",
+    "scope": "only data owned by the authenticated account",
+    "excludes": ["password_hash", "session token", "session token_hash"]
+  }
+}
