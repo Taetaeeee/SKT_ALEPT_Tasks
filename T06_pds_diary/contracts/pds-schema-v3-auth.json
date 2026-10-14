@@ -5,8 +5,9 @@
   "duration_unit": "minutes",
   "authentication": {
     "mode": "direct implementation using the Web Crypto API",
+    "username_policy": "4-40 chars: lowercase a-z, digits, dot, underscore, hyphen; uppercase is rejected, not normalized",
     "password_kdf": "PBKDF2-HMAC-SHA-256",
-    "iterations": 600000,
+    "iterations": 100000,
     "salt_bytes": 16,
     "stored_password_format": "pbkdf2-sha256$iterations$salt$derivedKey",
     "session_type": "opaque random session",

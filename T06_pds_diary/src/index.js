@@ -1,6 +1,6 @@
 const SESSION_COOKIE = 'pds_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
-const PBKDF2_ITERATIONS = 600000;
+const PBKDF2_ITERATIONS = 100000;
 const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
   'cache-control': 'no-store',
@@ -51,7 +51,7 @@ function seoulToday() {
 }
 
 function normalizeUsername(value) {
-  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 function validateUsername(username) {

@@ -1,4 +1,5 @@
 const $ = (s) => document.querySelector(s);
+const USERNAME_RE = /^[a-z0-9._-]{4,40}$/;
 let selectedPlanId = null;
 let selectedPlan = null;
 let allTasks = [];
@@ -587,11 +588,17 @@ async function handleLoginSubmit(e) {
   e.preventDefault();
   const msg = $('#login-message');
   msg.className = '';
+  const username = $('#login-username').value.trim();
+  if (!USERNAME_RE.test(username)) {
+    setText(msg, '아이디는 영문 소문자·숫자·점·밑줄·하이픈으로 4~40자여야 합니다.');
+    msg.className = 'error';
+    return;
+  }
   setText(msg, '확인 중…');
   try {
     const data = await api('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username: $('#login-username').value, password: $('#login-password').value })
+      body: JSON.stringify({ username, password: $('#login-password').value })
     });
     $('#login-form').reset();
     showApp(data.user, data.session_expires_at);
@@ -607,6 +614,12 @@ async function handleRegisterSubmit(e) {
   e.preventDefault();
   const msg = $('#register-message');
   msg.className = '';
+  const username = $('#register-username').value.trim();
+  if (!USERNAME_RE.test(username)) {
+    setText(msg, '아이디는 영문 소문자·숫자·점·밑줄·하이픈으로 4~40자여야 합니다.');
+    msg.className = 'error';
+    return;
+  }
   const password = $('#register-password').value;
   if (password !== $('#register-password-confirm').value) {
     setText(msg, '비밀번호 확인이 일치하지 않습니다.');
@@ -617,7 +630,7 @@ async function handleRegisterSubmit(e) {
   try {
     const data = await api('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ username: $('#register-username').value, password })
+      body: JSON.stringify({ username, password })
     });
     $('#register-form').reset();
     showApp(data.user, data.session_expires_at);
