@@ -38,9 +38,56 @@ function resetAuthView() {
   registerMessage.className = '';
 }
 
+function resetUserScopedView() {
+  selectedPlanId = null;
+  selectedPlan = null;
+  allTasks = [];
+  editingTaskId = null;
+  allExecutions = [];
+  currentSummary = null;
+  selectedReflection = null;
+  studyState = null;
+
+  resetPlanForm();
+  $('#task-form').reset();
+  $('#execution-form').reset();
+
+  const planList = $('#plan-list');
+  planList.replaceChildren();
+  const planPlaceholder = document.createElement('p');
+  planPlaceholder.className = 'meta';
+  planPlaceholder.textContent = '로그인한 계정의 계획을 불러옵니다.';
+  planList.append(planPlaceholder);
+
+  $('#study-setup-form').reset();
+  $('#study-today-form').reset();
+  $('#study-rule-form').reset();
+  for (const el of $('#study-setup-form').querySelectorAll('input, textarea, select, button')) el.disabled = false;
+  $('#study-rounding-digits').value = '1';
+  $('#study-week-start').value = 'monday';
+  $('#study-today-form').hidden = true;
+  $('#study-rule-form').hidden = true;
+  setText($('#study-progress'), '0 / 5일');
+  setText($('#study-sum'), '0');
+  setText($('#study-average'), '0');
+  setText($('#study-change-state'), '아직 없음');
+  setText($('#study-calculation-rule'), '각 날짜 입력값 합계와 기록 수 기준 평균');
+  setText($('#study-setup-message'), '');
+  setText($('#study-today-message'), '');
+  setText($('#study-rule-message'), '');
+  $('#study-records').innerHTML = '<p class="meta">기준을 저장하면 실제 날짜 기록이 표시됩니다.</p>';
+
+  $('#password-form').reset();
+  $('#delete-account-form').reset();
+  setText($('#password-message'), '');
+  setText($('#delete-message'), '');
+  setText($('#signed-user'), '');
+}
+
 function showAuth(message = '') {
   currentUser = null;
   resetAuthView();
+  resetUserScopedView();
   $('#auth-shell').hidden = false;
   $('#app-shell').hidden = true;
   if (message) {
@@ -618,6 +665,7 @@ async function handleLoginSubmit(e) {
       body: JSON.stringify({ username, password: $('#login-password').value })
     });
     $('#login-form').reset();
+    resetUserScopedView();
     showApp(data.user, data.session_expires_at);
     setText(msg, '');
     await Promise.all([loadPlans(), loadUsageStudy()]);
@@ -650,6 +698,7 @@ async function handleRegisterSubmit(e) {
       body: JSON.stringify({ username, password })
     });
     $('#register-form').reset();
+    resetUserScopedView();
     showApp(data.user, data.session_expires_at);
     if (data.claimed_legacy_plans > 0) {
       window.alert(`T06에서 저장된 계획 ${data.claimed_legacy_plans}건을 첫 계정 자료로 연결했습니다.`);
@@ -663,10 +712,10 @@ async function handleRegisterSubmit(e) {
 
 async function logoutNow() {
   try { await api('/api/auth/logout', { method: 'POST', body: '{}' }); }
-  catch { /* 세션이 이미 만료된 경우에도 로그인 화면으로 이동 */ }
-  selectedPlanId = null;
-  studyState = null;
-  showAuth();
+  catch { /* 세션이 이미 만료된 경우에도 깨끗한 로그인 화면으로 이동 */ }
+  resetAuthView();
+  resetUserScopedView();
+  window.location.replace('/');
 }
 
 function renderUsageStudy(data) {
