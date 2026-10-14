@@ -22,8 +22,25 @@ function setText(el, value) { el.textContent = value ?? ''; }
 let currentUser = null;
 let studyState = null;
 
+function resetAuthView() {
+  $('#login-form').reset();
+  $('#register-form').reset();
+
+  const signupBox = $('#auth-shell .signup-box');
+  if (signupBox) signupBox.open = false;
+
+  const loginMessage = $('#login-message');
+  setText(loginMessage, '');
+  loginMessage.className = '';
+
+  const registerMessage = $('#register-message');
+  setText(registerMessage, '');
+  registerMessage.className = '';
+}
+
 function showAuth(message = '') {
   currentUser = null;
+  resetAuthView();
   $('#auth-shell').hidden = false;
   $('#app-shell').hidden = true;
   if (message) {
@@ -649,7 +666,7 @@ async function logoutNow() {
   catch { /* 세션이 이미 만료된 경우에도 로그인 화면으로 이동 */ }
   selectedPlanId = null;
   studyState = null;
-  showAuth('로그아웃되었습니다.');
+  showAuth();
 }
 
 function renderUsageStudy(data) {
