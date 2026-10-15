@@ -476,11 +476,19 @@ function updateActualMinutes() {
 }
 
 function formatSeoulDateTime(iso) {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso || '-';
+  if (!iso) return '-';
+
+  // SQLite/D1 CURRENT_TIMESTAMP는 `YYYY-MM-DD HH:mm:ss` 형태의 UTC 문자열을 반환합니다.
+  // 시간대 표기가 없는 이 값을 브라우저 로컬 시간으로 오해하지 않도록 UTC(`Z`)로 명시합니다.
+  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(iso)
+    ? `${iso.replace(' ', 'T')}Z`
+    : iso;
+
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return iso;
   return new Intl.DateTimeFormat('ko-KR', {
     timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hour12: false
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
   }).format(date);
 }
 
@@ -773,7 +781,7 @@ function renderUsageStudy(data) {
     const item = document.createElement('div'); item.className = 'revision-item';
     const title = document.createElement('strong'); title.textContent = '계획 규칙 변경 · 2일차 뒤 / 3일차 앞';
     const meta = document.createElement('div'); meta.className = 'meta';
-    meta.textContent = `${change.previous_rule} → ${change.new_rule} · 이유: ${change.reason} · 시각 ${change.changed_at}`;
+    meta.textContent = `${change.previous_rule} → ${change.new_rule} · 이유: ${change.reason} · 시각 ${formatSeoulDateTime(change.changed_at)} KST`;
     item.append(title, meta); root.append(item);
   }
 }
