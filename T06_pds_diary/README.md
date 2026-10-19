@@ -8,7 +8,6 @@ T06에서 만든 플랜두씨 다이어리를 그대로 이어서 가입·로그
 - 소스: https://github.com/Taetaeeee/SKT_ALEPT_Tasks/tree/T07-auth/T06_pds_diary
 - 인증 구현 설명서: [docs/T07_인증_구현_설명서.md](./docs/T07_인증_구현_설명서.md)
 - 검증 절차: [docs/T07_검증절차.md](./docs/T07_검증절차.md)
-- 최종 commit SHA: **[최종 커밋 후 40자리 SHA 입력]**
 
 첫 화면은 계정 없이 열 수 있는 로그인 화면이며, 계획·할 일·실행 기록·5일 기록은 로그인 뒤에만 표시됩니다.
 
