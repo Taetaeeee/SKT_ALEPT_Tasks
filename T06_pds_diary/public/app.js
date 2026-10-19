@@ -738,16 +738,21 @@ function renderUsageStudy(data) {
   setText($('#study-change-state'), change ? '1회 완료' : '아직 없음');
 
   const setup = $('#study-setup-form');
+  const locked = records.length > 0;
   if (config) {
     $('#study-question').value = config.question;
     $('#study-metric-name').value = config.metric_name;
     $('#study-metric-unit').value = config.metric_unit;
-    $('#study-plan-rule').value = config.plan_rule;
+    // usage_study_config.plan_rule은 규칙 변경 후 현재 규칙으로 갱신된다.
+    // 하지만 이 영역은 '1일차에 고정한 기준'을 보여주는 곳이므로,
+    // 변경 기록이 있으면 당시 최초 규칙(previous_rule)을 표시한다.
+    $('#study-plan-rule').value = change?.previous_rule || config.plan_rule;
     $('#study-rounding-digits').value = String(config.rounding_digits);
     $('#study-week-start').value = config.week_start_day;
     setText($('#study-calculation-rule'), config.calculation_rule);
   }
-  const locked = records.length > 0;
+  const setupHeading = setup.querySelector('h3');
+  if (setupHeading) setupHeading.textContent = locked ? '1일차에 고정한 기준' : '1일차에 고정할 기준';
   for (const el of setup.querySelectorAll('input, textarea, select, button')) el.disabled = locked;
   setText($('#study-setup-message'), locked ? '첫 기록이 저장되어 1일차 기준이 고정되었습니다.' : (config ? '첫 기록 전까지 기준을 수정할 수 있습니다.' : ''));
 
