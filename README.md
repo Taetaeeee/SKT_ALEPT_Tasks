@@ -8,11 +8,11 @@
 
 | 과제 | 프로젝트 | 핵심 내용 | 진행 현황 | 결과물 |
 | :---: | --- | --- | :---: | --- |
-| T01 | 자기소개 페이지 | 경험과 근거를 담은 반응형 웹 자기소개 | 완료 | 상세 주소 확인 필요 |
+| T01 | 자기소개 페이지 | 경험과 근거를 담은 반응형 웹 자기소개 | 완료 | [실행](https://taetaeeee.github.io/SKT_ALEPT_Tasks/T01_onepagemyself/) |
 | T02 | 암호 해제 미니게임 | 제한시간·난이도·게임 상태 관리 | 완료 | [실행](https://taetaeeee.github.io/SKT_ALEPT_Tasks/T02_code_break/) |
 | T03 | 밈 만들기 | 이미지·문구 편집과 PNG 저장 | 완료 | [실행](https://taetaeeee.github.io/SKT_ALEPT_Tasks/T03_card_studio/) |
-| T04 | 생활 환율 | 실제 환율 조회, 날짜별 기록, 오류 복구 | 완료 | 상세 주소 확인 필요 |
-| T05 | AI 협업 및 인수인계 | 동일 테스트 기반 AI A/B 작업 비교 | 진행 중 | 작업 결과 정리 예정 |
+| T04 | 생활 환율 | 실제 환율 조회, 날짜별 기록, 오류 복구 | 완료 | [실행](https://taetaeeee.github.io/SKT_ALEPT_Tasks/T04_exchange_board/) |
+| T05 | AI 협업 및 인수인계 | 동일 테스트 기반 AI A/B 작업 비교 | 완료 | [실행](https://taetaeeee.github.io/SKT_ALEPT_Tasks/T05_handoff_project/report.html) |
 | T06 | 계획·실행 다이어리 | 계획·할 일·실행 기록·회고 | 예정 | — |
 | T07 | 인증 및 접근 제어 | T06에 인증과 데이터 접근 제어 추가 | 예정 | — |
 
