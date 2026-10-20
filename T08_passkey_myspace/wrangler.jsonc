@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "t08-passkey-myspace",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-20",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "t08-passkey-db",
+      "database_id": "00000000-0000-4000-8000-000000000000"
+    }
+  ]
+}
