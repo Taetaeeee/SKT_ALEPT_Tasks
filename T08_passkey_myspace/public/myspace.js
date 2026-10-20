@@ -1,5 +1,5 @@
 /**
- * T08 카드 2 — 등록 화면. 비공개 자료는 어떤 경우에도 이 파일에 넣지 않는다.
+ * T08 카드 2~3 — 등록 화면. 비공개 자료는 어떤 경우에도 이 파일에 넣지 않는다.
  * SimpleWebAuthn은 검증을 서버에서 수행하고, 브라우저는 표준 WebAuthn API만 호출한다.
  */
 (() => {
@@ -136,6 +136,9 @@
       if (response.status === 401 || response.status === 403) {
         output.classList.add('is-denied');
         output.textContent = `${response.status} — 비공개 자료 요청이 서버에서 거절되었습니다. (T08-C16·C17 검사)`;
+      } else if (response.ok) {
+        output.classList.add('is-denied');
+        output.textContent = 'HTTP 200 — 인증된 세션으로만 서버의 비공개 API가 열렸습니다.';
       } else {
         output.classList.add('is-error');
         output.textContent = `HTTP ${response.status}. 세션 상태와 서버 라우팅을 확인하세요.`;

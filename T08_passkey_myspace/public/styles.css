@@ -196,3 +196,12 @@ nav .nav-lock { font-size: .76em; }
 .passkey-form input:focus-visible,.passkey-form button:focus-visible{outline:3px solid #1c6eaf;outline-offset:2px}
 .passkey-form .private-actions{margin:10px 0 0}
 .passkey-form button:disabled{opacity:.55;cursor:not-allowed}
+
+/* T08 card 3: login, logout and server-fetched private items */
+.authenticated-space{margin:18px 0;padding:18px;border:1px solid #a5b9ca;background:#f5f8fb;border-radius:12px}
+.authenticated-space h4{margin:0 0 8px;color:var(--text);font-size:1.1rem}
+.private-item-list{display:grid;gap:10px;margin-top:12px}
+.private-item{padding:13px;border:1px solid var(--line);border-radius:10px;background:white}
+.private-item h5{font-size:1rem;margin:0 0 6px;color:var(--text)}
+.private-item p{font-size:.85rem;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;color:var(--muted)}
+.private-card button[hidden],.private-card section[hidden]{display:none !important}

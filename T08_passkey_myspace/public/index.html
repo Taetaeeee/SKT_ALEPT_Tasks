@@ -512,14 +512,21 @@
           <p>이곳에는 실제 개인정보가 아닌, 만들어 넣은 학습·프로젝트 자료 세 항목 이상을 보관할 예정입니다.</p>
           <p class="private-note">서버는 인증 전에 제목과 내용 등 실제 항목 데이터를 전송하지 않습니다.</p>
           <div class="private-actions">
-            <button type="button" class="primary-link" disabled aria-describedby="authSoon">패스키로 로그인 · 준비 중</button>
+            <button type="button" class="primary-link" id="loginPasskey" aria-describedby="authSoon">패스키로 로그인</button>
+            <button type="button" class="ghost-button" id="logoutPasskey" hidden>로그아웃</button>
             <button type="button" class="ghost-button" id="checkPrivateAccess">비로그인 접근 검사</button>
           </div>
-          <p id="authSoon" class="private-hint">새 계정용 패스키 등록을 시험할 수 있습니다. 로그인과 비공개 자료 조회는 다음 단계에서 연결됩니다.</p>
-          <p id="privateResult" class="private-result" role="status" aria-live="polite">접근 검사를 누르면 서버가 실제로 401 응답을 보내는지 확인합니다.</p>
+          <p id="authSoon" class="private-hint">등록한 패스키로 로그인하세요. 서버가 공개키로 서명을 검증한 뒤에만 비공개 자료를 내려 줍니다.</p>
+          <p id="privateResult" class="private-result" role="status" aria-live="polite">로그인하지 않았을 때 접근 검사를 누르면 실제 서버 401 응답을 확인할 수 있습니다.</p>
+          <p id="loginResult" class="private-result" role="status" aria-live="polite">로그인하려면 위 패스키 버튼을 누르세요. 로그인은 등록과 별개입니다.</p>
+          <section id="authenticatedSpace" class="authenticated-space" hidden aria-labelledby="authenticatedTitle">
+            <h4 id="authenticatedTitle">인증된 나만의 공간</h4>
+            <p id="authenticatedNickname" class="private-note"></p>
+            <div id="privateItems" aria-label="인증된 계정의 비공개 자료 목록"></div>
+          </section>
           <section class="passkey-register" aria-labelledby="passkeyRegisterTitle">
-            <h4 id="passkeyRegisterTitle">첫 번째 패스키 등록</h4>
-            <p class="private-note">실제 개인정보 대신 가상의 계정 이름을 입력하세요. 기존 계정의 패스키 추가는 로그인 기능 구현 후 지원합니다.</p>
+            <h4 id="passkeyRegisterTitle">패스키 등록</h4>
+            <p class="private-note" id="registerModeHint">실제 개인정보 대신 가상 계정 이름을 입력하세요. 기존 계정에 두 번째 패스키를 추가하려면 먼저 로그인해야 합니다.</p>
             <form id="passkeyRegisterForm" class="passkey-form">
               <label for="passkeyNickname">가상 계정 이름</label>
               <input id="passkeyNickname" name="nickname" minlength="2" maxlength="24" required pattern="[A-Za-z0-9가-힣_-]{2,24}" placeholder="예: testA" autocomplete="off">
@@ -531,9 +538,8 @@
               </div>
             </form>
             <p id="registrationResult" class="private-result" role="status" aria-live="polite">등록하면 기기에서 패스키 생성 창이 열립니다. 비밀번호는 사용하지 않습니다.</p>
-            <p id="registrationSuccess" class="private-note" hidden>등록에 성공했습니다. 서버에는 공개키만 저장됩니다. 로그인은 다음 단계에서 구현합니다. 저장 위치(Windows Hello·구글 비밀번호 관리자·보안 키 등)는 사용자가 직접 확인해 기록하세요.</p>
+            <p id="registrationSuccess" class="private-note" hidden>등록에 성공했습니다. 서버에는 공개키만 저장됩니다. 비공개 자료는 로그인에 성공한 뒤에만 열립니다. 패스키 저장 위치도 직접 확인해 기록하세요.</p>
           </section>
-          <div id="privateItems" hidden aria-label="인증된 계정의 비공개 자료 목록"></div>
         </div>
         <aside class="private-boundary" aria-label="공개와 비공개 경계 설명">
           <p class="mini-label">ACCESS BOUNDARY</p>
@@ -560,6 +566,7 @@
 
   <script src="script.js"></script>
   <script src="myspace.js" defer></script>
+  <script src="auth-ui.js" defer></script>
 
   <script>
     (() => {

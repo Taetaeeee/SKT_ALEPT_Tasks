@@ -1,8 +1,9 @@
 import { handleRegistration } from './registration.js';
+import { handleAuthentication } from './authentication.js';
 /**
  * T08 card 1: public static assets + fail-closed private API.
- * Card 2 adds verified registration but intentionally does NOT issue login sessions.
- * Login/signature verification are reserved for card 3.
+ * Card 2 registers verified WebAuthn public keys. Card 3 verifies assertions,
+ * issues hashed server-side sessions, and revokes them on logout.
  */
 const PRIVATE_COOKIE = 't08_session';
 const JSON_HEADERS = {
@@ -49,6 +50,9 @@ export default {
       return env.ASSETS.fetch(request);
     }
 
+    const authenticationResponse = await handleAuthentication(request, env);
+    if (authenticationResponse) return authenticationResponse;
+
     const registrationResponse = await handleRegistration(request, env, verifiedUserId);
     if (registrationResponse) return registrationResponse;
 
@@ -56,7 +60,9 @@ export default {
       if (request.method !== 'GET') return reply({ error: 'method_not_allowed' }, 405);
       try {
         const userId = await verifiedUserId(request, env);
-        return reply({ authenticated: Boolean(userId) });
+        if (!userId) return reply({ authenticated: false });
+        const user = await env.DB.prepare('SELECT nickname FROM users WHERE id = ? LIMIT 1').bind(userId).first();
+        return user ? reply({ authenticated: true, nickname: user.nickname }) : reply({ authenticated: false });
       } catch {
         return reply({ error: 'service_unavailable' }, 503);
       }
