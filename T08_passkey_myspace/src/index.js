@@ -1,7 +1,8 @@
+import { handleRegistration } from './registration.js';
 /**
  * T08 card 1: public static assets + fail-closed private API.
- * This stage deliberately has NO passkey enrollment or session issuance endpoint.
- * Only WebAuthn verification (added in card 2-3) may create valid sessions later.
+ * Card 2 adds verified registration but intentionally does NOT issue login sessions.
+ * Login/signature verification are reserved for card 3.
  */
 const PRIVATE_COOKIE = 't08_session';
 const JSON_HEADERS = {
@@ -47,6 +48,9 @@ export default {
     if (!pathname.startsWith('/api/')) {
       return env.ASSETS.fetch(request);
     }
+
+    const registrationResponse = await handleRegistration(request, env, verifiedUserId);
+    if (registrationResponse) return registrationResponse;
 
     if (pathname === '/api/auth/status') {
       if (request.method !== 'GET') return reply({ error: 'method_not_allowed' }, 405);

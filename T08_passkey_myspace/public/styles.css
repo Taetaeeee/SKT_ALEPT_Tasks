@@ -186,3 +186,13 @@ nav .nav-lock { font-size: .76em; }
 .boundary-disclaimer { padding-top: 14px; border-top: 1px solid var(--line); font-size: .78rem; color: var(--muted); }
 @media(max-width:840px){ .private-layout { grid-template-columns: 1fr; } }
 @media(max-width:520px){ .private-card,.private-boundary { padding: 18px; } .private-actions { flex-direction: column; } .private-actions > button { width: 100%; } }
+
+/* T08 card 2: passkey registration (keyboard-accessible, responsive) */
+.passkey-register{margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+.passkey-register h4{font-size:1.06rem;margin:0 0 10px;color:var(--text)}
+.passkey-form{display:grid;grid-template-columns:1fr;gap:8px;margin-top:14px}
+.passkey-form label{font-size:.88rem;font-weight:700;color:var(--text)}
+.passkey-form input{width:100%;padding:11px 12px;border:1px solid #9eafbd;border-radius:9px;background:white;color:var(--text);font:inherit;box-sizing:border-box}
+.passkey-form input:focus-visible,.passkey-form button:focus-visible{outline:3px solid #1c6eaf;outline-offset:2px}
+.passkey-form .private-actions{margin:10px 0 0}
+.passkey-form button:disabled{opacity:.55;cursor:not-allowed}

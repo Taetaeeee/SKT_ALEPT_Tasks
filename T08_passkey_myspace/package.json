@@ -1,7 +1,7 @@
 {
   "name": "t08-passkey-myspace",
   "private": true,
-  "version": "0.1.0-card1",
+  "version": "0.2.0-registration",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "wrangler": "^4.20.0"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "14.0.3"
   }
 }

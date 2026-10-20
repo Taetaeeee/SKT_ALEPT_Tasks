@@ -515,8 +515,24 @@
             <button type="button" class="primary-link" disabled aria-describedby="authSoon">패스키로 로그인 · 준비 중</button>
             <button type="button" class="ghost-button" id="checkPrivateAccess">비로그인 접근 검사</button>
           </div>
-          <p id="authSoon" class="private-hint">패스키 등록과 로그인은 다음 단계에서 연결됩니다. 이 단계에서는 누구에게도 비공개 내용을 제공하지 않습니다.</p>
+          <p id="authSoon" class="private-hint">새 계정용 패스키 등록을 시험할 수 있습니다. 로그인과 비공개 자료 조회는 다음 단계에서 연결됩니다.</p>
           <p id="privateResult" class="private-result" role="status" aria-live="polite">접근 검사를 누르면 서버가 실제로 401 응답을 보내는지 확인합니다.</p>
+          <section class="passkey-register" aria-labelledby="passkeyRegisterTitle">
+            <h4 id="passkeyRegisterTitle">첫 번째 패스키 등록</h4>
+            <p class="private-note">실제 개인정보 대신 가상의 계정 이름을 입력하세요. 기존 계정의 패스키 추가는 로그인 기능 구현 후 지원합니다.</p>
+            <form id="passkeyRegisterForm" class="passkey-form">
+              <label for="passkeyNickname">가상 계정 이름</label>
+              <input id="passkeyNickname" name="nickname" minlength="2" maxlength="24" required pattern="[A-Za-z0-9가-힣_-]{2,24}" placeholder="예: testA" autocomplete="off">
+              <label for="passkeyLabel">패스키 이름</label>
+              <input id="passkeyLabel" name="label" minlength="2" maxlength="40" required placeholder="예: 내 PC · Windows Hello" autocomplete="off">
+              <div class="private-actions">
+                <button id="createPasskey" type="submit" class="primary-link">새 패스키 등록</button>
+                <button id="cancelPasskeyRegister" type="button" class="ghost-button" disabled>등록 취소</button>
+              </div>
+            </form>
+            <p id="registrationResult" class="private-result" role="status" aria-live="polite">등록하면 기기에서 패스키 생성 창이 열립니다. 비밀번호는 사용하지 않습니다.</p>
+            <p id="registrationSuccess" class="private-note" hidden>등록에 성공했습니다. 서버에는 공개키만 저장됩니다. 로그인은 다음 단계에서 구현합니다. 저장 위치(Windows Hello·구글 비밀번호 관리자·보안 키 등)는 사용자가 직접 확인해 기록하세요.</p>
+          </section>
           <div id="privateItems" hidden aria-label="인증된 계정의 비공개 자료 목록"></div>
         </div>
         <aside class="private-boundary" aria-label="공개와 비공개 경계 설명">
