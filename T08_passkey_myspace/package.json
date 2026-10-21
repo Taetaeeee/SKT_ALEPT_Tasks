@@ -1,7 +1,7 @@
 {
   "name": "t08-passkey-myspace",
   "private": true,
-  "version": "0.3.0-authentication",
+  "version": "0.4.0-passkey-management",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",

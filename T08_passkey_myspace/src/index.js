@@ -1,5 +1,6 @@
 import { handleRegistration } from './registration.js';
 import { handleAuthentication } from './authentication.js';
+import { handlePasskeyManagement } from './passkey-management.js';
 /**
  * T08 card 1: public static assets + fail-closed private API.
  * Card 2 registers verified WebAuthn public keys. Card 3 verifies assertions,
@@ -55,6 +56,9 @@ export default {
 
     const registrationResponse = await handleRegistration(request, env, verifiedUserId);
     if (registrationResponse) return registrationResponse;
+
+    const managementResponse = await handlePasskeyManagement(request, env, verifiedUserId);
+    if (managementResponse) return managementResponse;
 
     if (pathname === '/api/auth/status') {
       if (request.method !== 'GET') return reply({ error: 'method_not_allowed' }, 405);

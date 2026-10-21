@@ -205,3 +205,15 @@ nav .nav-lock { font-size: .76em; }
 .private-item h5{font-size:1rem;margin:0 0 6px;color:var(--text)}
 .private-item p{font-size:.85rem;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;color:var(--muted)}
 .private-card button[hidden],.private-card section[hidden]{display:none !important}
+
+/* T08 card 4: passkey names/dates + revocation controls (authenticated only) */
+.passkey-management{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.passkey-management-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.passkey-management h5{margin:0;font-size:1.02rem;color:var(--text)}
+.passkey-list{list-style:none;margin:12px 0;padding:0;display:grid;gap:10px}
+.passkey-row{padding:12px;background:white;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.passkey-row strong,.passkey-row small{display:block;overflow-wrap:anywhere}
+.passkey-row small{margin-top:3px;color:var(--muted);font-size:.8rem}
+.passkey-row button:disabled{opacity:.58;cursor:not-allowed}
+.passkey-management .private-result{margin-top:12px}
+@media(max-width:520px){.passkey-row{align-items:stretch}.passkey-delete{width:100%}}

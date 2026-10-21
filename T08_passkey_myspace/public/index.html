@@ -523,6 +523,16 @@
             <h4 id="authenticatedTitle">인증된 나만의 공간</h4>
             <p id="authenticatedNickname" class="private-note"></p>
             <div id="privateItems" aria-label="인증된 계정의 비공개 자료 목록"></div>
+            <section class="passkey-management" id="passkeyManagement" aria-labelledby="passkeyManagementTitle">
+              <div class="passkey-management-head">
+                <h5 id="passkeyManagementTitle">등록된 패스키</h5>
+                <button type="button" class="ghost-button" id="refreshPasskeys">목록 새로고침</button>
+              </div>
+              <p class="private-note">각 패스키의 이름과 등록일을 확인할 수 있습니다. 마지막 패스키는 삭제할 수 없습니다.</p>
+              <div id="passkeyList" aria-label="현재 계정의 패스키 목록"></div>
+              <p id="passkeyManagementResult" class="private-result" role="status" aria-live="polite">로그인한 계정의 패스키만 표시됩니다.</p>
+              <p class="private-note">삭제 시 보안을 위해 모든 세션이 종료됩니다. 남은 패스키로 다시 로그인하세요. 모든 패스키를 잃어버리면 비밀번호 복구 수단이 없어 이 계정에 접근할 수 없습니다.</p>
+            </section>
           </section>
           <section class="passkey-register" aria-labelledby="passkeyRegisterTitle">
             <h4 id="passkeyRegisterTitle">패스키 등록</h4>
@@ -567,6 +577,7 @@
   <script src="script.js"></script>
   <script src="myspace.js" defer></script>
   <script src="auth-ui.js" defer></script>
+  <script src="passkey-manager.js" defer></script>
 
   <script>
     (() => {

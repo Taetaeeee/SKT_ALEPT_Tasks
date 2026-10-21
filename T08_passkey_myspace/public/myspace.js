@@ -104,7 +104,8 @@
         credential: serializeCredential(credential),
       });
       currentTransaction = null;
-      setStatus(`등록 완료: ${saved.nickname} / ${saved.label}. 서버에 공개키가 저장됐습니다. 비공개 영역은 아직 잠겨 있습니다.`, 'is-denied');
+      setStatus(`등록 완료: ${saved.nickname} / ${saved.label}. 서버에 공개키가 저장됐습니다.`, 'is-denied');
+      window.dispatchEvent(new Event('t08:passkey-registered'));
       document.getElementById('registrationSuccess').hidden = false;
     } catch (error) {
       await cancelPending(currentTransaction);

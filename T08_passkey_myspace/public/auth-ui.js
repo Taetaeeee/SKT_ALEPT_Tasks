@@ -81,6 +81,7 @@
     privateItems.replaceChildren();
     nicknameInput.readOnly = false;
     nicknameInput.value = '';
+    window.dispatchEvent(new Event('t08:auth-changed'));
     registerTitle.textContent = '패스키 등록';
     registerHint.textContent = '새 계정 생성 시 가상 이름을 입력하세요. 이미 등록된 계정의 패스키 추가는 로그인 후 가능합니다.';
   }
@@ -92,6 +93,7 @@
     authenticatedNickname.textContent = `현재 인증된 가상 계정: ${nickname}`;
     nicknameInput.value = nickname;
     nicknameInput.readOnly = true;
+    window.dispatchEvent(new Event('t08:auth-changed'));
     registerTitle.textContent = '현재 계정에 패스키 추가';
     registerHint.textContent = '현재 로그인된 계정에만 패스키를 추가합니다. 패스키 이름을 새로 입력하세요.';
   }
@@ -174,6 +176,10 @@
     } catch {
       message('로그아웃 요청에 실패했습니다. 서버 상태를 확인하세요.', 'is-error');
     } finally { logoutButton.disabled = false; }
+  });
+  window.addEventListener('t08:session-revoked', () => {
+    setGuest();
+    message('패스키 삭제 완료. 보안을 위해 기존 세션을 종료했습니다. 남은 패스키로 다시 로그인하세요.', 'is-denied');
   });
   restoreSession();
 })();

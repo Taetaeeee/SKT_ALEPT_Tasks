@@ -4,6 +4,18 @@
 
 **T01 공개 소개 내용은 그대로 유지합니다.** T08에는 MY SPACE를 추가하고, 비공개 API는 서버 세션이 없으면 401을 반환합니다.
 
+### 카드 4 변경 사항 (T08-C42~C46)
+
+- `src/passkey-management.js`: 서버 세션 기반 `GET /api/passkeys/manage`, `POST /api/passkeys/manage/delete` 추가.
+- 현재 계정 소유 패스키만 이름·등록 날짜와 함께 보여 주며, 다른 계정 패스키 삭제는 404.
+- 마지막 패스키의 삭제는 **서버에서도 409로 차단**. 삭제는 로그인 직후 10분 내에만 가능.
+- 삭제에 성공하면 해당 계정의 **모든 서버 세션 폐기** 및 쿠키 만료. 남은 패스키로 재로그인 필요.
+- 화면: 로그인한 사용자만 목록을 볼 수 있으며 등록 성공 시 목록 자동 새로고침.
+- 현재 `testA / My-PC` 1개, `testB / Test-Key` 1개는 별개의 계정! **C42는 testA에 새 패스키를 추가**해야 충족.
+- 기존 DB 스키마 변경과 D1 Console SQL 실행 **불필요**. `wrangler.jsonc` 교체 금지.
+- **코드/모의 DB 테스트**: `tests/card4-management.test.js` 7건 (실제 Bitwarden/D1 검사는 배포 후).
+- 단계별 검증/제출용 표: `evidence/CARD4_RECOVERY.md`.
+
 ### 카드 3 변경 사항 (T08-C27~C35)
 
 - `src/authentication.js`에 `POST /api/passkeys/login/options`, `POST /api/passkeys/login/verify`, `POST /api/auth/logout` 구현.
