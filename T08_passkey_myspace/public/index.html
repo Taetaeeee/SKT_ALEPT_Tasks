@@ -539,7 +539,7 @@
             <p class="private-note" id="registerModeHint">실제 개인정보 대신 가상 계정 이름을 입력하세요. 기존 계정에 두 번째 패스키를 추가하려면 먼저 로그인해야 합니다.</p>
             <form id="passkeyRegisterForm" class="passkey-form">
               <label for="passkeyNickname">가상 계정 이름</label>
-              <input id="passkeyNickname" name="nickname" minlength="2" maxlength="24" required pattern="[A-Za-z0-9가-힣_-]{2,24}" placeholder="예: testA" autocomplete="off">
+              <input id="passkeyNickname" name="nickname" minlength="2" maxlength="24" required pattern="[A-Za-z0-9가-힣_\-]{2,24}" placeholder="예: testA" autocomplete="off">
               <label for="passkeyLabel">패스키 이름</label>
               <input id="passkeyLabel" name="label" minlength="2" maxlength="40" required placeholder="예: 내 PC · Windows Hello" autocomplete="off">
               <div class="private-actions">
