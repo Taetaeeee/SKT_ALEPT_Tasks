@@ -28,9 +28,9 @@ https://github.com/Taetaeeee/SKT_ALEPT_Tasks/tree/main/T08_passkey_myspace
 ## 최종 제출 전 점검
 
 - [ ] 결과물과 소스 URL이 새 InPrivate 창에서 별도 로그인 없이 열리는지 확인
-- [ ] T01 공개 소개 내용이 남아 있는지 확인
-- [ ] 비로그인 API가 실제 자료가 있어도 401인지 최종 확인
-- [ ] `testA`에 패스키 `Backup-Key`·`My-PC-v2` 두 개, `testB`에 `Test-Key` 확인
-- [ ] C33 '같은 세션값 재사용' 증거 추가 또는 미확인 상태를 정확히 표기
-- [ ] 실제 개인정보·세션값·암호·복구 코드·API 토큰 원문이 없는지 확인
+- [x] T01 공개 소개 내용과 별도의 잠긴 MY SPACE 화면 유지 확인
+- [x] 비로그인 API가 실제 자료 6건 저장 후에도 접근 거절하는지 확인 (`unauthorized`; 이전 Network의 HTTP 401 증거 함께 보관)
+- [x] D1에서 `testA`의 `Backup-Key`·`My-PC-v2` 두 개 및 `testB`의 `Test-Key` 확인
+- [x] C33 동일한 이전 세션값 재전송 → 401 확인 (2026-10-22, 쿠키 원문 비공개)
+- [ ] GitHub에 올린 **모든 제출 문서 및 캡처**에서 실제 개인정보·쿠키·세션값·복구 코드·API 토큰 원문이 없는지 최종 확인
 - [ ] 제출 화면에서 요구하는 필드에 맞게 URL과 설명서 및 짧은 확인 문구 입력
