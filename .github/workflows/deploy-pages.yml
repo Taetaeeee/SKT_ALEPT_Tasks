@@ -1,13 +1,11 @@
+
 name: Deploy GitHub Pages
 
+# main 브랜치에 코드가 올라오거나 수동 실행할 때만 동작
 on:
   push:
     branches:
       - main
-  schedule:
-    # 01:00 UTC = 10:00 KST
-    # ExchangeRate-API 일일 갱신 이후 여유를 두고 실행
-    - cron: '0 1 * * *'
   workflow_dispatch:
 
 permissions:
@@ -20,11 +18,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
+  # ============================================
+  # 1. BUILD: 데이터 수집, 검사, 배포 파일 업로드
+  # ============================================
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,6 +30,7 @@ jobs:
         with:
           fetch-depth: 0
 
+      # T04 최신 환율 데이터 수집
       - name: Fetch current public exchange rates
         shell: bash
         run: |
@@ -48,6 +46,7 @@ jobs:
             /tmp/t04-rates.json \
             T04_exchange_board/data/current-rates.json
 
+      # 서로 다른 KST 날짜의 실제 기록 보존
       - name: Preserve second actual KST-day record when eligible
         shell: bash
         run: |
@@ -57,6 +56,7 @@ jobs:
             /tmp/t04-rates.json \
             T04_exchange_board/data/live-records.json
 
+      # T04 소스 및 증거 데이터 검증
       - name: Validate T04 source and evidence
         shell: bash
         run: |
@@ -80,6 +80,7 @@ jobs:
           node T04_exchange_board/scripts/final-audit.mjs
           bash T04_exchange_board/scripts/scan-git-history-secrets.sh
 
+      # 새로운 실제 기록이 있을 때만 커밋
       - name: Commit newly preserved second live record
         shell: bash
         run: |
@@ -96,6 +97,7 @@ jobs:
             git push
           fi
 
+      # 실제 날짜별 기록 2개가 확보되면 최종 검사
       - name: Final audit when two actual records exist
         shell: bash
         run: |
@@ -110,14 +112,28 @@ jobs:
             echo "Actual live records: $count/2. Final audit will run automatically after the second date is preserved."
           fi
 
+      # GitHub Pages 구성
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      # Pages 배포 아티팩트 업로드
       - name: Upload repository as Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: '.'
 
+  # ============================================
+  # 2. DEPLOY: build 완료 후 별도 Job에서 배포
+  # ============================================
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
