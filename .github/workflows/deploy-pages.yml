@@ -1,11 +1,17 @@
 
 name: Deploy GitHub Pages
 
-# main 브랜치에 코드가 올라오거나 수동 실행할 때만 동작
+# main 브랜치에 코드가 올라오거나,
+# 매일 오전 10시 또는 수동 실행할 때 동작
 on:
   push:
     branches:
       - main
+
+  schedule:
+    # 매일 오전 10시 KST = 01:00 UTC
+    - cron: '0 1 * * *'
+
   workflow_dispatch:
 
 permissions:
